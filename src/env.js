@@ -8,6 +8,9 @@ export const env = createEnv({
    */
   server: {
     NODE_ENV: z.enum(["development", "test", "production"]),
+    FONTCONFIG_PATH: z.string().optional(),
+    // For macOS systems using Homebrew
+    PANGOCAIRO_BACKEND: z.enum(["fontconfig", "coretext"]).optional(),
   },
 
   /**
@@ -25,6 +28,8 @@ export const env = createEnv({
    */
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
+    FONTCONFIG_PATH: process.env.FONTCONFIG_PATH,
+    PANGOCAIRO_BACKEND: process.env.PANGOCAIRO_BACKEND,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },
   /**
