@@ -17,7 +17,7 @@ export const watermarkRouter = createTRPCRouter({
         .mutation(async ({ input }) => {
             try {
                 const fileBuffer = Buffer.from(input.fileBase64, 'base64');
-                let image = sharp(fileBuffer, {
+                const image = sharp(fileBuffer, {
                     failOnError: false,
                 });
 
@@ -32,18 +32,22 @@ export const watermarkRouter = createTRPCRouter({
                     "4K": 2160,
                 }[input.quality] ?? 512;
 
+                const scaleFactor = targetSize / 512;
+                const fontSize = Math.round(24 * scaleFactor); // Base font size: 24px
+
                 const aspectRatio = width / height;
                 const [newWidth, newHeight] = width > height
                     ? [Math.round(targetSize * aspectRatio), targetSize]
                     : [targetSize, Math.round(targetSize / aspectRatio)];
 
-                const charWidth = 14;
+                const baseCharWidth = 14; // Base character width for 512p
+                const charWidth = Math.round(baseCharWidth * scaleFactor);
                 const watermarkWidth = input.watermark.length * charWidth;
                 const horizontalSpacing = 5 * charWidth;
                 const verticalSpacing = 2 * charWidth;
 
                 const totalHorizontalSpace = watermarkWidth + horizontalSpacing;
-                const totalVerticalSpace = 24 + verticalSpacing;
+                const totalVerticalSpace = fontSize + verticalSpacing;
 
                 const diagonalLength = Math.ceil(Math.sqrt(newWidth * newWidth + newHeight * newHeight));
                 const numCols = Math.ceil(diagonalLength / totalHorizontalSpace) + 2;
@@ -51,7 +55,7 @@ export const watermarkRouter = createTRPCRouter({
 
                 const svgContent = `
                     <svg width="${newWidth}" height="${newHeight}">
-                        <style>.watermark { font-family: ${input.fontName}; font-size: 24px; fill: rgba(255, 255, 255, 0.3); }</style>
+                        <style>.watermark { font-family: ${input.fontName}; font-size: ${fontSize}px; fill: rgba(255, 255, 255, 0.3); }</style>
                         <g transform="translate(${newWidth / 2}, ${newHeight / 2}) rotate(45) translate(${-diagonalLength / 2}, ${-diagonalLength / 2})">
                             ${Array.from({ length: numRows }, (_, row) =>
                     Array.from({ length: numCols }, (_, col) =>
