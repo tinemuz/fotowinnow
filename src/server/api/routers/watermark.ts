@@ -98,7 +98,19 @@ export const watermarkRouter = createTRPCRouter({
 
                 const svgContent = `
                     <svg width="${newWidth}" height="${newHeight}">
-                        <style>.watermark { font-family: ${fontFamily}; font-size: ${fontSize}px; fill: rgba(255, 255, 255, 0.3); }</style>
+                        <defs>
+                            <style>
+                                @font-face {
+                                    font-family: "${fontFamily}";
+                                    src: local("${fontFamily}");
+                                }
+                                .watermark { 
+                                    font-family: "${fontFamily}", monospace; 
+                                    font-size: ${fontSize}px; 
+                                    fill: rgba(255, 255, 255, 0.3); 
+                                }
+                            </style>
+                        </defs>
                         <g transform="translate(${newWidth / 2}, ${newHeight / 2}) rotate(45) translate(${-diagonalLength / 2}, ${-diagonalLength / 2})">
                             ${Array.from({ length: numRows }, (_, row) =>
                     Array.from({ length: numCols }, (_, col) =>
