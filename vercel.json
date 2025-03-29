@@ -1,4 +1,4 @@
-{
+
   "env": {
     "FONTCONFIG_PATH": "./src/fonts",
     "FONTCONFIG_FILE": "./src/fonts/fonts.conf",
