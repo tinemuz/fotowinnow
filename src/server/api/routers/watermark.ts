@@ -3,6 +3,16 @@ import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import sharp from "sharp";
 import { Space_Mono, Roboto_Mono, Source_Code_Pro, JetBrains_Mono, IBM_Plex_Mono, Cutive_Mono } from "next/font/google";
 
+import path from 'path';
+
+path.resolve(process.cwd(), 'fonts', 'fonts.conf');
+path.resolve(process.cwd(), 'fonts', 'CutiveMono-Regular.ttf');
+path.resolve(process.cwd(), 'fonts', 'IBMPlexMono-Regular.ttf');
+path.resolve(process.cwd(), 'fonts', 'JetBrainsMono-Regular.ttf');
+path.resolve(process.cwd(), 'fonts', 'RobotoMono-Regular.ttf');
+path.resolve(process.cwd(), 'fonts', 'SourceCodePro-Regular.ttf');
+path.resolve(process.cwd(), 'fonts', 'SpaceMono-Regular.ttf');
+
 sharp.cache(false);
 
 const spaceMono = Space_Mono({
