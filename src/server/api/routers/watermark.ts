@@ -15,44 +15,21 @@ path.resolve(process.cwd(), 'fonts', 'SpaceMono-Regular.ttf');
 
 sharp.cache(false);
 
-const spaceMono = Space_Mono({
-    weight: '400',
-    subsets: ['latin'],
-});
-
-const robotoMono = Roboto_Mono({
-    weight: '400',
-    subsets: ['latin'],
-});
-
-const sourceCodePro = Source_Code_Pro({
-    weight: '400',
-    subsets: ['latin'],
-});
-
-const jetbrainsMono = JetBrains_Mono({
-    weight: '400',
-    subsets: ['latin'],
-});
-
-const ibmPlexMono = IBM_Plex_Mono({
-    weight: '400',
-    subsets: ['latin'],
-});
-
-const cutiveMono = Cutive_Mono({
-    weight: '400',
-    subsets: ['latin'],
-});
-
-const fontFamilyMap = {
-    'Space Mono': spaceMono.style.fontFamily,
-    'Roboto Mono': robotoMono.style.fontFamily,
-    'Source Code Pro': sourceCodePro.style.fontFamily,
-    'JetBrains Mono': jetbrainsMono.style.fontFamily,
-    'IBM Plex Mono': ibmPlexMono.style.fontFamily,
-    'Cutive Mono': cutiveMono.style.fontFamily,
+const fonts = {
+    'Space Mono': Space_Mono,
+    'Roboto Mono': Roboto_Mono, 
+    'Source Code Pro': Source_Code_Pro,
+    'JetBrains Mono': JetBrains_Mono,
+    'IBM Plex Mono': IBM_Plex_Mono,
+    'Cutive Mono': Cutive_Mono
 };
+
+const fontFamilyMap = Object.fromEntries(
+    Object.entries(fonts).map(([name, font]) => [
+        name,
+        font({ weight: '400', subsets: ['latin'] }).style.fontFamily
+    ])
+);
 
 export const watermarkRouter = createTRPCRouter({
     addWatermark: publicProcedure
