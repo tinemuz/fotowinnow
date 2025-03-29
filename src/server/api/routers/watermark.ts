@@ -1,24 +1,27 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import sharp from "sharp";
-import { env } from "~/env";
+import fs from "fs";
+import path from "path";
 
 sharp.cache(false);
 
-// Configure Sharp's font path to use custom fonts directory if defined
-if (env.FONTCONFIG_PATH) {
-    // Set the FONTCONFIG_PATH for Sharp to use custom fonts
-    process.env.FONTCONFIG_PATH = env.FONTCONFIG_PATH;
-}
+// Function to encode font as Base64
+const encodeFontToBase64 = (fontPath: string): string => {
+    try {
+        const fontBuffer = fs.readFileSync(fontPath);
+        return `data:font/ttf;base64,${fontBuffer.toString("base64")}`;
+    } catch (error) {
+        console.error("Error loading font:", error);
+        return "";
+    }
+};
 
-// Map of font display names to web-safe CSS font stacks for SVG
-const svgFontMap = {
-    'Space Mono': "'Space Mono', monospace",
-    'Roboto Mono': "'Roboto Mono', monospace",
-    'Source Code Pro': "'Source Code Pro', monospace",
-    'JetBrains Mono': "'JetBrains Mono', monospace",
-    'IBM Plex Mono': "'IBM Plex Mono', monospace",
-    'Cutive Mono': "'Cutive Mono', monospace",
+// Load font files dynamically
+const fontsDirectory = path.join(process.cwd(), "public/fonts");
+const fontFiles: Record<string, string> = {
+    "Roboto Mono": encodeFontToBase64(path.join(fontsDirectory, "RobotoMono-VariableFont_wght.ttf")),
+    // Add more fonts if needed
 };
 
 export const watermarkRouter = createTRPCRouter({
@@ -33,10 +36,8 @@ export const watermarkRouter = createTRPCRouter({
         )
         .mutation(async ({ input }) => {
             try {
-                const fileBuffer = Buffer.from(input.fileBase64, 'base64');
-                const image = sharp(fileBuffer, {
-                    failOnError: false,
-                });
+                const fileBuffer = Buffer.from(input.fileBase64, "base64");
+                const image = sharp(fileBuffer, { failOnError: false });
 
                 const metadata = await image.metadata();
                 const width = metadata.width ?? 0;
@@ -50,36 +51,42 @@ export const watermarkRouter = createTRPCRouter({
                 }[input.quality] ?? 512;
 
                 const scaleFactor = targetSize / 512;
-                const fontSize = Math.round(24 * scaleFactor); // Base font size: 24px
-
+                const fontSize = Math.round(24 * scaleFactor);
                 const aspectRatio = width / height;
-                const [newWidth, newHeight] = width > height
-                    ? [Math.round(targetSize * aspectRatio), targetSize]
-                    : [targetSize, Math.round(targetSize / aspectRatio)];
+                const [newWidth, newHeight] =
+                    width > height
+                        ? [Math.round(targetSize * aspectRatio), targetSize]
+                        : [targetSize, Math.round(targetSize / aspectRatio)];
 
-                const baseCharWidth = 14; // Base character width for 512p
+                const baseCharWidth = 14;
                 const charWidth = Math.round(baseCharWidth * scaleFactor);
                 const watermarkWidth = input.watermark.length * charWidth;
-
                 const horizontalSpacing = 2 * charWidth;
                 const verticalSpacing = 2 * charWidth;
-
                 const totalHorizontalSpace = watermarkWidth + horizontalSpacing;
                 const totalVerticalSpace = fontSize + verticalSpacing;
-
-                const diagonalLength = Math.ceil(Math.sqrt(newWidth * newWidth + newHeight * newHeight));
+                const diagonalLength = Math.ceil(Math.sqrt(newWidth ** 2 + newHeight ** 2));
                 const numCols = Math.ceil(diagonalLength / totalHorizontalSpace) + 2;
                 const numRows = Math.ceil(diagonalLength / totalVerticalSpace) + 2;
 
-                // Use our simplified font stack for SVG
-                const fontFamily = svgFontMap[input.fontName as keyof typeof svgFontMap] ?? "'monospace'";
+                // Load font as base64
+                const fontBase64 = fontFiles[input.fontName] ?? "";
+                const svgFontFace = fontBase64
+                    ? `
+                    @font-face {
+                        font-family: '${input.fontName}';
+                        src: url('${fontBase64}') format('truetype');
+                    }`
+                    : "";
 
+                // Generate SVG with embedded font
                 const svgContent = `
                     <svg width="${newWidth}" height="${newHeight}" xmlns="http://www.w3.org/2000/svg">
                         <defs>
                             <style>
+                                ${svgFontFace}
                                 .watermark { 
-                                    font-family: ${fontFamily}; 
+                                    font-family: '${input.fontName}', monospace; 
                                     font-size: ${fontSize}px; 
                                     fill: rgba(255, 255, 255, 0.3);
                                 }
@@ -89,28 +96,23 @@ export const watermarkRouter = createTRPCRouter({
                             ${Array.from({ length: numRows }, (_, row) =>
                     Array.from({ length: numCols }, (_, col) =>
                         `<text 
-                                        x="${col * totalHorizontalSpace + (row % 2 ? totalHorizontalSpace / 2 : 0)}" 
-                                        y="${row * totalVerticalSpace}" 
-                                        class="watermark"
-                                    >${input.watermark}</text>`
-                    ).join('')
-                ).join('')}
+                            x="${col * totalHorizontalSpace + (row % 2 ? totalHorizontalSpace / 2 : 0)}" 
+                            y="${row * totalVerticalSpace}" 
+                            class="watermark"
+                        >${input.watermark}</text>`
+                    ).join("")
+                ).join("")}
                         </g>
                     </svg>
                 `;
 
                 const result = await image
                     .resize(newWidth, newHeight, { fit: "fill" })
-                    .composite([{
-                        input: Buffer.from(svgContent),
-                        top: 0,
-                        left: 0,
-                        blend: "over",
-                    }])
+                    .composite([{ input: Buffer.from(svgContent), top: 0, left: 0, blend: "over" }])
                     .png({ compressionLevel: 6 })
                     .toBuffer();
 
-                return result.toString('base64');
+                return result.toString("base64");
             } catch (error) {
                 console.error("Error processing image:", error);
                 throw new Error("Error processing image");
