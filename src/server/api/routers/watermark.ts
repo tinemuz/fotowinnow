@@ -1,15 +1,8 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import sharp from "sharp";
-import { env } from "~/env";
 
 sharp.cache(false);
-
-// Configure Sharp's font path to use custom fonts directory if defined
-if (env.FONTCONFIG_PATH) {
-    // Set the FONTCONFIG_PATH for Sharp to use custom fonts
-    process.env.FONTCONFIG_PATH = env.FONTCONFIG_PATH;
-}
 
 // Map of font display names to web-safe CSS font stacks for SVG
 const svgFontMap = {
