@@ -1,9 +1,0 @@
-
-  "env": {
-    "FONTCONFIG_PATH": "./src/fonts",
-    "FONTCONFIG_FILE": "./src/fonts/fonts.conf",
-    "PANGOCAIRO_BACKEND": "fontconfig"
-  },
-  "buildCommand": "next build",
-  "outputDirectory": ".next"
-} 
