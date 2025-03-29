@@ -1,8 +1,42 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import sharp from "sharp";
+import { Space_Mono, Roboto_Mono, Source_Code_Pro, JetBrains_Mono, IBM_Plex_Mono } from "next/font/google";
 
 sharp.cache(false);
+
+const spaceMono = Space_Mono({
+    weight: '400',
+    subsets: ['latin'],
+});
+
+const robotoMono = Roboto_Mono({
+    weight: '400',
+    subsets: ['latin'],
+});
+
+const sourceCodePro = Source_Code_Pro({
+    weight: '400',
+    subsets: ['latin'],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+    weight: '400',
+    subsets: ['latin'],
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+    weight: '400',
+    subsets: ['latin'],
+});
+
+const fontFamilyMap = {
+    'Space Mono': spaceMono.style.fontFamily,
+    'Roboto Mono': robotoMono.style.fontFamily,
+    'Source Code Pro': sourceCodePro.style.fontFamily,
+    'JetBrains Mono': jetbrainsMono.style.fontFamily,
+    'IBM Plex Mono': ibmPlexMono.style.fontFamily,
+};
 
 export const watermarkRouter = createTRPCRouter({
     addWatermark: publicProcedure
@@ -53,9 +87,11 @@ export const watermarkRouter = createTRPCRouter({
                 const numCols = Math.ceil(diagonalLength / totalHorizontalSpace) + 2;
                 const numRows = Math.ceil(diagonalLength / totalVerticalSpace) + 2;
 
+                const fontFamily = fontFamilyMap[input.fontName as keyof typeof fontFamilyMap] ?? fontFamilyMap['Space Mono'];
+
                 const svgContent = `
                     <svg width="${newWidth}" height="${newHeight}">
-                        <style>.watermark { font-family: ${input.fontName}; font-size: ${fontSize}px; fill: rgba(255, 255, 255, 0.3); }</style>
+                        <style>.watermark { font-family: ${fontFamily}; font-size: ${fontSize}px; fill: rgba(255, 255, 255, 0.3); }</style>
                         <g transform="translate(${newWidth / 2}, ${newHeight / 2}) rotate(45) translate(${-diagonalLength / 2}, ${-diagonalLength / 2})">
                             ${Array.from({ length: numRows }, (_, row) =>
                     Array.from({ length: numCols }, (_, col) =>

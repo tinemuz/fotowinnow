@@ -9,7 +9,7 @@ const SingleImageUploader = () => {
     const [preview, setPreview] = useState<string | null>(null);
     const [quality, setQuality] = useState<string | null>(null);
     const [watermark, setWatermark] = useState("");
-    const [font, setFont] = useState<string | null>(null);
+    const [font, setFont] = useState<string>("Space Mono");
     const [error, setError] = useState("");
     const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -141,9 +141,15 @@ const SingleImageUploader = () => {
                 <select
                     className="w-full border border-gray-300 p-2 rounded-lg"
                     onChange={(e) => setFont(e.target.value)}
-                    defaultValue="Courier New"
+                    defaultValue="Space Mono"
                 >
-                    {["Courier New", "Monaco", "Consolas", "Lucida Console"].map((f) => (
+                    {[
+                        "Space Mono",
+                        "Roboto Mono",
+                        "Source Code Pro",
+                        "JetBrains Mono",
+                        "IBM Plex Mono"
+                    ].map((f) => (
                         <option key={f} value={f}>
                             {f}
                         </option>
