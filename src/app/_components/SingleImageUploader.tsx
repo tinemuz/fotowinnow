@@ -148,7 +148,8 @@ const SingleImageUploader = () => {
                         "Roboto Mono",
                         "Source Code Pro",
                         "JetBrains Mono",
-                        "IBM Plex Mono"
+                        "IBM Plex Mono",
+                        "Cutive Mono"
                     ].map((f) => (
                         <option key={f} value={f}>
                             {f}

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import sharp from "sharp";
-import { Space_Mono, Roboto_Mono, Source_Code_Pro, JetBrains_Mono, IBM_Plex_Mono } from "next/font/google";
+import { Space_Mono, Roboto_Mono, Source_Code_Pro, JetBrains_Mono, IBM_Plex_Mono, Cutive_Mono } from "next/font/google";
 
 sharp.cache(false);
 
@@ -30,12 +30,18 @@ const ibmPlexMono = IBM_Plex_Mono({
     subsets: ['latin'],
 });
 
+const cutiveMono = Cutive_Mono({
+    weight: '400',
+    subsets: ['latin'],
+});
+
 const fontFamilyMap = {
     'Space Mono': spaceMono.style.fontFamily,
     'Roboto Mono': robotoMono.style.fontFamily,
     'Source Code Pro': sourceCodePro.style.fontFamily,
     'JetBrains Mono': jetbrainsMono.style.fontFamily,
     'IBM Plex Mono': ibmPlexMono.style.fontFamily,
+    'Cutive Mono': cutiveMono.style.fontFamily,
 };
 
 export const watermarkRouter = createTRPCRouter({
@@ -77,7 +83,8 @@ export const watermarkRouter = createTRPCRouter({
                 const baseCharWidth = 14; // Base character width for 512p
                 const charWidth = Math.round(baseCharWidth * scaleFactor);
                 const watermarkWidth = input.watermark.length * charWidth;
-                const horizontalSpacing = 5 * charWidth;
+
+                const horizontalSpacing = 2 * charWidth;
                 const verticalSpacing = 2 * charWidth;
 
                 const totalHorizontalSpace = watermarkWidth + horizontalSpacing;
