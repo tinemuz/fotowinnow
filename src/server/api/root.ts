@@ -1,5 +1,5 @@
-import { createTRPCRouter } from "~/server/api/trpc";
 import { watermarkRouter } from "~/server/api/routers/watermark";
+import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 
 /**
  * This is the primary router for your server.
@@ -9,6 +9,8 @@ import { watermarkRouter } from "~/server/api/routers/watermark";
 export const appRouter = createTRPCRouter({
   watermark: watermarkRouter,
 });
+
+export const createCaller = createCallerFactory(appRouter);
 
 // export type definition of API
 export type AppRouter = typeof appRouter;
