@@ -3,6 +3,7 @@
 import React from "react";
 import { Download } from "lucide-react";
 import { useImageProcessing } from "@/hooks/useImageProcessing";
+import { QualityOption } from "@/lib/constants";
 
 const SingleImageUploader = () => {
     const {
@@ -59,7 +60,7 @@ const SingleImageUploader = () => {
                                 type="radio"
                                 name="quality"
                                 value={q}
-                                onChange={(e) => setQuality(e.target.value as any)}
+                                onChange={(e) => setQuality(e.target.value as QualityOption)}
                                 className="appearance-none size-1 checked:size-2 bg-gray-300 rounded-full checked:bg-gray-800 checked:border-gray-800 transition cursor-pointer"
                             />
                         </label>
