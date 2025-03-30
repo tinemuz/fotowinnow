@@ -1,9 +1,10 @@
 "use server";
 
-import { z } from "zod";
 import sharp from "sharp";
-import { Space_Mono, Roboto_Mono, Source_Code_Pro, JetBrains_Mono, IBM_Plex_Mono, Cutive_Mono } from "next/font/google";
 import path from 'path';
+import { Space_Mono, Roboto_Mono, Source_Code_Pro, JetBrains_Mono, IBM_Plex_Mono, Cutive_Mono } from "next/font/google";
+import { watermarkInputSchema } from "@/lib/utils/validation";
+import { WatermarkResult } from "@/types/image";
 
 // Configure font paths
 path.resolve(process.cwd(), 'fonts', 'fonts.conf');
@@ -33,15 +34,7 @@ const fontFamilyMap = {
     'Cutive Mono': cutiveMono.style.fontFamily
 };
 
-// Input validation schema
-const inputSchema = z.object({
-    fileBase64: z.string(),
-    quality: z.enum(["512p", "1080p", "2K", "4K"]),
-    watermark: z.string().min(1).max(15),
-    fontName: z.string(),
-});
-
-export async function addWatermark(formData: FormData) {
+export async function addWatermark(formData: FormData): Promise<WatermarkResult> {
     try {
         // Extract and validate the data
         const fileBase64 = formData.get('fileBase64') as string;
@@ -50,13 +43,14 @@ export async function addWatermark(formData: FormData) {
         const fontName = formData.get('fontName') as string;
 
         // Validate using zod
-        const input = inputSchema.parse({
+        const input = watermarkInputSchema.parse({
             fileBase64,
             quality,
             watermark,
             fontName
         });
 
+        // ... existing code ...
         const fileBuffer = Buffer.from(input.fileBase64, 'base64');
         const image = sharp(fileBuffer, {
             failOnError: false,

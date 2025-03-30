@@ -2,7 +2,7 @@ import "./globals.css";
 
 import { type Metadata } from "next";
 import { Inter } from "next/font/google";
-import Nav from "./_components/Nav";
+import Nav from "@/components/ui/Nav";
 
 export const metadata: Metadata = {
   title: "Fotowinnow",

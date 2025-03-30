@@ -1,4 +1,4 @@
-import SingleImageUploader from "./_components/SingleImageUploader";
+import SingleImageUploader from "@/components/forms/SingleImageUploader";
 
 export default function Home() {
   return (
@@ -10,4 +10,4 @@ export default function Home() {
       </div>
     </main>
   );
-}
+} 

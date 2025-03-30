@@ -1,81 +1,25 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { Download } from "lucide-react";
-import { addWatermark } from "../actions/watermark";
+import { useImageProcessing } from "@/hooks/useImageProcessing";
 
 const SingleImageUploader = () => {
-    const [file, setFile] = useState<File | null>(null);
-    const [preview, setPreview] = useState<string | null>(null);
-    const [quality, setQuality] = useState<string | null>(null);
-    const [watermark, setWatermark] = useState("");
-    const [font, setFont] = useState<string>("Space Mono");
-    const [error, setError] = useState("");
-    const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
-    const [isProcessing, setIsProcessing] = useState(false);
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedFile = e.target.files?.[0];
-        if (selectedFile) {
-            if (selectedFile.size > 10 * 1024 * 1024) {
-                setError("File size must be less than 10MB");
-                setFile(null);
-                setPreview(null);
-                return;
-            }
-
-            setError("");
-            setFile(selectedFile);
-            setPreview(URL.createObjectURL(selectedFile));
-            setDownloadUrl(null);
-        }
-    };
-
-    const handleWatermark = async () => {
-        if (!file || !quality || !watermark || !font) {
-            setError("All fields must be filled before submitting");
-            return;
-        }
-
-        try {
-            setError("");
-            setIsProcessing(true);
-            
-            const fileBuffer = await file.arrayBuffer();
-            const base64 = Buffer.from(fileBuffer).toString('base64');
-            
-            // Create FormData for server action
-            const formData = new FormData();
-            formData.append('fileBase64', base64);
-            formData.append('quality', quality as "512p" | "1080p" | "2K" | "4K");
-            formData.append('watermark', watermark);
-            formData.append('fontName', font);
-            
-            // Call server action
-            const response = await addWatermark(formData);
-            
-            if (!response.success || !response.result) {
-                throw new Error(response.error || "Failed to process image");
-            }
-            
-            const resultBase64: string = response.result;
-            
-            const binaryString = atob(resultBase64);
-            const bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-            
-            const blob = new Blob([bytes], { type: "image/png" });
-            const url = URL.createObjectURL(blob);
-            setDownloadUrl(url);
-        } catch (error) {
-            console.error(error);
-            setError("Error processing image.");
-        } finally {
-            setIsProcessing(false);
-        }
-    };
+    const {
+        file,
+        preview,
+        error,
+        downloadUrl,
+        isProcessing,
+        qualityOptions,
+        fontOptions,
+        handleFileChange,
+        setQuality,
+        watermark,
+        handleSetWatermark,
+        setFont,
+        processImage
+    } = useImageProcessing();
 
     return (
         <div className="flex flex-col items-center justify-center w-full max-w-md mx-auto pt-8">
@@ -108,14 +52,14 @@ const SingleImageUploader = () => {
 
             <div className="mt-4">
                 <div className="flex gap-8">
-                    {["512p", "1080p", "2K", "4K"].map((q) => (
+                    {qualityOptions.map((q) => (
                         <label key={q} className="flex flex-col items-center gap-3 text-sm cursor-pointer">
                             <span>{q}</span>
                             <input
                                 type="radio"
                                 name="quality"
                                 value={q}
-                                onChange={(e) => setQuality(e.target.value)}
+                                onChange={(e) => setQuality(e.target.value as any)}
                                 className="appearance-none size-1 checked:size-2 bg-gray-300 rounded-full checked:bg-gray-800 checked:border-gray-800 transition cursor-pointer"
                             />
                         </label>
@@ -128,15 +72,7 @@ const SingleImageUploader = () => {
                 <input
                     type="text"
                     value={watermark}
-                    onChange={(e) => {
-                        const text = e.target.value;
-                        if (text.length <= 15) {
-                            setWatermark(text);
-                            setError("");
-                        } else {
-                            setError("Watermark text must be 15 characters or less");
-                        }
-                    }}
+                    onChange={(e) => handleSetWatermark(e.target.value)}
                     placeholder="Enter watermark text"
                     className="w-full border border-gray-300 p-2 rounded-lg"
                     maxLength={15}
@@ -148,16 +84,9 @@ const SingleImageUploader = () => {
                 <select
                     className="w-full border border-gray-300 p-2 rounded-lg"
                     onChange={(e) => setFont(e.target.value)}
-                    defaultValue="Space Mono"
+                    defaultValue={fontOptions[0]}
                 >
-                    {[
-                        "Space Mono",
-                        "Roboto Mono",
-                        "Source Code Pro",
-                        "JetBrains Mono",
-                        "IBM Plex Mono",
-                        "Cutive Mono"
-                    ].map((f) => (
+                    {fontOptions.map((f) => (
                         <option key={f} value={f}>
                             {f}
                         </option>
@@ -169,7 +98,7 @@ const SingleImageUploader = () => {
 
             <div className="mt-6 flex items-center gap-4">
                 <button
-                    onClick={handleWatermark}
+                    onClick={processImage}
                     disabled={isProcessing}
                     className={`px-6 py-2 ease-in-out duration-200 rounded-full ${
                         isProcessing 
