@@ -1,9 +1,7 @@
-import "~/styles/globals.css";
+import "./globals.css";
 
 import { type Metadata } from "next";
 import { Inter } from "next/font/google";
-
-import { TRPCReactProvider } from "~/trpc/react";
 import Nav from "./_components/Nav";
 
 export const metadata: Metadata = {
@@ -23,12 +21,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable}`}>
       <body>
-        <TRPCReactProvider>
           <Nav />
           <main className="pt-16">
             {children}
           </main>
-        </TRPCReactProvider>
       </body>
     </html>
   );

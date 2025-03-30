@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Download } from "lucide-react";
-import { api } from "~/trpc/react";
+import { addWatermark } from "../actions/watermark";
 
 const SingleImageUploader = () => {
     const [file, setFile] = useState<File | null>(null);
@@ -13,8 +13,6 @@ const SingleImageUploader = () => {
     const [error, setError] = useState("");
     const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
-
-    const watermarkMutation = api.watermark.addWatermark.useMutation();
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0];
@@ -46,14 +44,23 @@ const SingleImageUploader = () => {
             const fileBuffer = await file.arrayBuffer();
             const base64 = Buffer.from(fileBuffer).toString('base64');
             
-            const result = await watermarkMutation.mutateAsync({
-                fileBase64: base64,
-                quality: quality as "512p" | "1080p" | "2K" | "4K",
-                watermark,
-                fontName: font,
-            });
-
-            const binaryString = atob(result);
+            // Create FormData for server action
+            const formData = new FormData();
+            formData.append('fileBase64', base64);
+            formData.append('quality', quality as "512p" | "1080p" | "2K" | "4K");
+            formData.append('watermark', watermark);
+            formData.append('fontName', font);
+            
+            // Call server action
+            const response = await addWatermark(formData);
+            
+            if (!response.success || !response.result) {
+                throw new Error(response.error || "Failed to process image");
+            }
+            
+            const resultBase64: string = response.result;
+            
+            const binaryString = atob(resultBase64);
             const bytes = new Uint8Array(binaryString.length);
             for (let i = 0; i < binaryString.length; i++) {
                 bytes[i] = binaryString.charCodeAt(i);
