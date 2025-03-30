@@ -15,6 +15,12 @@ path.resolve(process.cwd(), 'fonts', 'RobotoMono-Regular.ttf');
 path.resolve(process.cwd(), 'fonts', 'SourceCodePro-Regular.ttf');
 path.resolve(process.cwd(), 'fonts', 'SpaceMono-Regular.ttf');
 
+// Set environment variables for production
+if (process.env.NODE_ENV === 'production') {
+    process.env.FONTCONFIG_PATH = '/var/task/fonts';
+    process.env.LD_LIBRARY_PATH = '/var/task';
+}
+
 sharp.cache(false);
 
 // Load fonts
