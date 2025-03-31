@@ -5,7 +5,6 @@ import path from 'path';
 import { Space_Mono, Roboto_Mono, Source_Code_Pro, JetBrains_Mono, IBM_Plex_Mono, Cutive_Mono } from "next/font/google";
 import { watermarkInputSchema } from "@/lib/utils/validation";
 import { WatermarkResult } from "@/types/image";
-import { auth } from "@clerk/nextjs/server";
 
 // Configure font paths
 path.resolve(process.cwd(), 'fonts', 'fonts.conf');
@@ -42,12 +41,6 @@ const fontFamilyMap = {
 };
 
 export async function addWatermark(formData: FormData): Promise<WatermarkResult> {
-    const { userId } = await auth();
-
-    if (!userId) {
-        return { success: false, error: "Authentication required" };
-    }
-
     try {
         // Extract and validate the data
         const fileBase64 = formData.get('fileBase64') as string;
