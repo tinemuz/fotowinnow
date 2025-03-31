@@ -1,5 +1,6 @@
 import SingleImageUploader from "@/components/forms/SingleImageUploader";
 import { SignedIn, SignedOut } from "@clerk/nextjs";
+import Nav from "@/components/ui/Nav";
 
 export default function Home() {
   return (
@@ -13,6 +14,7 @@ export default function Home() {
       </SignedIn>
       
       <SignedOut>
+        <Nav/>
         <div className="container max-w-2xl mx-auto px-4 py-16 text-center">
           <h1 className="text-3xl font-bold mb-6">Welcome to Fotowinnow</h1>
           <p className="text-lg mb-8">
