@@ -1,31 +1,40 @@
 import "./globals.css";
-
-import { type Metadata } from "next";
-import { Inter } from "next/font/google";
-import Nav from "@/components/ui/Nav";
+import {ClerkProvider, SignedIn, SignedOut, SignInButton, SignUpButton, UserButton,} from '@clerk/nextjs'
+import {type Metadata} from "next";
+import {Inter} from "next/font/google";
 
 export const metadata: Metadata = {
-  title: "Fotowinnow",
-  description: "Add watermarks to your images",
-  icons: [{ rel: "icon", url: "/favicon.ico" }],
+    title: "Fotowinnow",
+    description: "Seamless photography hand-off",
+    icons: [{rel: "icon", url: "/favicon.ico"}],
 };
 
 const inter = Inter({
-  subsets: ["latin"],
-  variable: '--font-inter',
+    subsets: ["latin"],
+    variable: '--font-inter',
 });
 
 export default function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
-  return (
-    <html lang="en" className={`${inter.variable}`}>
-      <body>
-          <Nav />
-          <main className="pt-16">
+                                       children,
+                                   }: Readonly<{ children: React.ReactNode }>) {
+    return (
+        <ClerkProvider>
+            <html lang="en" >
+            <body className={`${inter.variable}`}>
+            <header className="flex justify-end items-center p-4 gap-4 mt-14">
+                <SignedOut>
+                    <SignInButton/>
+                    <SignUpButton/>
+                </SignedOut>
+                <SignedIn>
+                    <UserButton/>
+                </SignedIn>
+            </header>
             {children}
-          </main>
-      </body>
-    </html>
-  );
+
+            </body>
+            </html>
+        </ClerkProvider>
+
+    );
 }
