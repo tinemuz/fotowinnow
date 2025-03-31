@@ -2,7 +2,6 @@ import "./globals.css";
 import {ClerkProvider, SignedIn, SignedOut, SignInButton, SignUpButton, UserButton,} from '@clerk/nextjs'
 import {type Metadata} from "next";
 import {Inter} from "next/font/google";
-import Nav from "@/components/ui/Nav";
 
 export const metadata: Metadata = {
     title: "Fotowinnow",
