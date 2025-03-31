@@ -22,7 +22,8 @@ export default function RootLayout({
         <ClerkProvider>
             <html lang="en" >
             <body className={`${inter.variable}`}>
-            <header className="flex justify-end items-center p-4 gap-4 h-16">
+            <Nav/>
+            <header className="flex justify-end items-center p-4 gap-4 mt-14">
                 <SignedOut>
                     <SignInButton/>
                     <SignUpButton/>
@@ -31,7 +32,6 @@ export default function RootLayout({
                     <UserButton/>
                 </SignedIn>
             </header>
-            <Nav/>
             {children}
 
             </body>
