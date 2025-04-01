@@ -1,17 +1,18 @@
-import SingleImageUploader from "@/components/forms/SingleImageUploader";
-import { SignedIn, SignedOut } from "@clerk/nextjs";
+import { SignedOut } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import Nav from "@/components/ui/Nav";
+import { redirect } from "next/navigation";
 
-export default function Home() {
+export default async function Home() {
+  const { userId } = await auth();
+  
+  if (userId) {
+    redirect("/dashboard");
+  }
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center">
-      <SignedIn>
-        <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16">
-          <div className="w-full max-w-2xl">
-            <SingleImageUploader />
-          </div>
-        </div>
-      </SignedIn>
+      {/* SignedIn component not needed since signed-in users are redirected */}
       
       <SignedOut>
         <Nav/>
