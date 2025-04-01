@@ -75,16 +75,16 @@ export function AlbumsList() {
       <TabsContent value="active" className="mt-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {activeAlbums.map((album) => (
-            <Card key={album.id}>
+            <Card key={album.id} className="min-w-[250px] min-h-[150px]">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <IconFolder className="h-5 w-5 text-primary" />
-                    {album.name}
+                  <CardTitle className="flex items-center gap-2 text-base truncate pr-2">
+                    <IconFolder className="h-5 w-5 text-primary flex-shrink-0" />
+                    <span className="truncate">{album.name}</span>
                   </CardTitle>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" className="flex-shrink-0">
                         <span className="sr-only">Open menu</span>
                         <IconArchive className="h-4 w-4" />
                       </Button>
@@ -96,10 +96,10 @@ export function AlbumsList() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-                <CardDescription>{album.description}</CardDescription>
+                <CardDescription className="truncate">{album.description}</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm text-muted-foreground truncate">
                   {album.imageCount} images • Created {album.createdAt}
                 </div>
               </CardContent>
@@ -110,16 +110,16 @@ export function AlbumsList() {
       <TabsContent value="archived" className="mt-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {archivedAlbums.map((album) => (
-            <Card key={album.id}>
+            <Card key={album.id} className="min-w-[250px] min-h-[150px]">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <IconFolder className="h-5 w-5 text-muted-foreground" />
-                    {album.name}
+                  <CardTitle className="flex items-center gap-2 text-base truncate pr-2">
+                    <IconFolder className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                    <span className="truncate">{album.name}</span>
                   </CardTitle>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" className="flex-shrink-0">
                         <span className="sr-only">Open menu</span>
                         <IconArchive className="h-4 w-4" />
                       </Button>
@@ -131,10 +131,10 @@ export function AlbumsList() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-                <CardDescription>{album.description}</CardDescription>
+                <CardDescription className="truncate">{album.description}</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm text-muted-foreground truncate">
                   {album.imageCount} images • Created {album.createdAt}
                 </div>
               </CardContent>
