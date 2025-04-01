@@ -4,19 +4,18 @@ import * as React from "react"
 import {
   IconCamera,
   IconChartBar,
-  IconDashboard,
   IconDatabase,
   IconFileAi,
   IconFileDescription,
   IconFileWord,
-  IconFolder,
+  IconFolders,
   IconHelp,
   IconInnerShadowTop,
   IconListDetails,
   IconReport,
   IconSearch,
   IconSettings,
-  IconUsers,
+  IconAlbum,
 } from "@tabler/icons-react"
 
 import { NavDocuments } from "@/components/nav-documents"
@@ -41,9 +40,9 @@ const data = {
   },
   navMain: [
     {
-      title: "Dashboard",
+      title: "Albums",
       url: "#",
-      icon: IconDashboard,
+      icon: IconAlbum,
     },
     {
       title: "Lifecycle",
@@ -56,14 +55,9 @@ const data = {
       icon: IconChartBar,
     },
     {
-      title: "Projects",
+      title: "Groups",
       url: "#",
-      icon: IconFolder,
-    },
-    {
-      title: "Team",
-      url: "#",
-      icon: IconUsers,
+      icon: IconFolders,
     },
   ],
   navClouds: [
@@ -161,8 +155,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
               <a href="#">
-                <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
+                <IconInnerShadowTop className="!size-6" />
+                <span className="text-base font-semibold">Fotowinnow</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
