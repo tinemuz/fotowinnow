@@ -1,33 +1,13 @@
 "use client"
 
 import * as React from "react"
-import {
-  AudioWaveform,
-  BookOpen,
-  Bot,
-  Command,
-  Frame,
-  GalleryVerticalEnd,
-  LayoutDashboard,
-  Album,
-  Map,
-  PieChart,
-  Settings2,
-  SquareTerminal,
-  Clock,
-} from "lucide-react"
+import {Album, AudioWaveform, Clock, Command, GalleryVerticalEnd, LayoutDashboard, Settings2,} from "lucide-react"
 
-import { NavMain } from "@/components/nav-main"
-import { NavRecentAlbums } from "@/components/nav-recent-albums"
-import { NavUser } from "@/components/nav-user"
-import { TeamSwitcher } from "@/components/team-switcher"
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarRail,
-} from "@/components/ui/sidebar"
+import {NavMain} from "@/components/nav-main"
+import {NavRecentAlbums} from "@/components/nav-recent-albums"
+import {NavUser} from "@/components/nav-user"
+import {TeamSwitcher} from "@/components/team-switcher"
+import {Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarRail,} from "@/components/ui/sidebar"
 import {SignedIn, UserButton} from "@clerk/nextjs";
 
 // This is sample data.

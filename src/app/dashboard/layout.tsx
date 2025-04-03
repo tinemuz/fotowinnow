@@ -1,21 +1,18 @@
 "use client"
 
 import * as React from "react"
-import { usePathname } from "next/navigation"
+import {usePathname} from "next/navigation"
 
-import { AppSidebar } from "@/components/app-sidebar"
+import {AppSidebar} from "@/components/app-sidebar"
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import {
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar"
+import {SidebarProvider, SidebarTrigger,} from "@/components/ui/sidebar"
 
 interface DashboardLayoutProps {
   children: React.ReactNode

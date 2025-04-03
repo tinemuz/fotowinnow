@@ -1,10 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { IconChevronRight } from "@tabler/icons-react"
-
-import { cn } from "@/lib/utils"
+import {usePathname} from "next/navigation"
+import {IconChevronRight} from "@tabler/icons-react"
 
 export function Breadcrumb() {
   const pathname = usePathname()

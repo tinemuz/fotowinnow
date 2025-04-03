@@ -1,7 +1,4 @@
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { SidebarTrigger } from "@/components/ui/sidebar"
-import { Breadcrumb } from "@/components/breadcrumb"
+import {Breadcrumb} from "@/components/breadcrumb"
 
 export function SiteHeader() {
   return (

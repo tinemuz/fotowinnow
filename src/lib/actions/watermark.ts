@@ -2,10 +2,10 @@
 
 import sharp from "sharp";
 import path from 'path';
-import { Space_Mono, Roboto_Mono, Source_Code_Pro, JetBrains_Mono, IBM_Plex_Mono, Cutive_Mono } from "next/font/google";
-import { watermarkInputSchema } from "@/lib/utils/validation";
-import { WatermarkResult } from "@/types/image";
-import { auth } from "@clerk/nextjs/server";
+import {Cutive_Mono, IBM_Plex_Mono, JetBrains_Mono, Roboto_Mono, Source_Code_Pro, Space_Mono} from "next/font/google";
+import {watermarkInputSchema} from "@/lib/utils/validation";
+import {WatermarkResult} from "@/types/image";
+import {auth} from "@clerk/nextjs/server";
 
 // Configure font paths
 path.resolve(process.cwd(), 'fonts', 'fonts.conf');

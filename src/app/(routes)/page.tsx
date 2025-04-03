@@ -1,7 +1,7 @@
-import { SignedOut } from "@clerk/nextjs";
-import { auth } from "@clerk/nextjs/server";
+import {SignedOut} from "@clerk/nextjs";
+import {auth} from "@clerk/nextjs/server";
 import Nav from "@/components/ui/Nav";
-import { redirect } from "next/navigation";
+import {redirect} from "next/navigation";
 
 export default async function Home() {
   const { userId } = await auth();

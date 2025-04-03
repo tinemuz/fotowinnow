@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { addWatermark } from "@/lib/actions/watermark";
-import { FONT_OPTIONS, MAX_WATERMARK_LENGTH, QUALITY_OPTIONS, QualityOption } from "@/lib/constants";
+import {useState} from "react";
+import {addWatermark} from "@/lib/actions/watermark";
+import {FONT_OPTIONS, MAX_WATERMARK_LENGTH, QUALITY_OPTIONS, QualityOption} from "@/lib/constants";
 
 export const useImageProcessing = () => {
     const [file, setFile] = useState<File | null>(null);

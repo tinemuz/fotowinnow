@@ -1,11 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  IconAlbum,
-  IconClockHour4,
-  IconFileSearch,
-  IconFileUpload,
-  IconPhoto,
-} from "@tabler/icons-react"
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card"
+import {IconAlbum, IconClockHour4, IconFileSearch, IconFileUpload, IconPhoto,} from "@tabler/icons-react"
 
 export default function DashboardPage() {
   return (

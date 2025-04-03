@@ -1,5 +1,5 @@
-import { AlbumsList } from "@/components/albums/albums-list"
-import { CreateAlbumDialog } from "@/components/albums/create-album-dialog"
+import {AlbumsList} from "@/components/albums/albums-list"
+import {CreateAlbumDialog} from "@/components/albums/create-album-dialog"
 
 export default function AlbumsPage() {
   return (
