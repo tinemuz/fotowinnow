@@ -1,8 +1,8 @@
 // src/lib/supabase/server.ts
-import {createServerClient} from '@supabase/ssr';
-import {createClient} from '@supabase/supabase-js';
-import {cookies} from 'next/headers';
-import {type ReadonlyRequestCookies} from 'next/dist/server/web/spec-extension/adapters/request-cookies';
+import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
+import { cookies } from 'next/headers';
+import { type ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension/adapters/request-cookies';
 
 // Function to create Supabase client for Server Components, Server Actions, Route Handlers
 // It reads/writes cookies to manage the user's session server-side.
@@ -38,7 +38,7 @@ export function createSupabaseServerClient(cookieStore: ReadonlyRequestCookies) 
                                 secure: process.env.NODE_ENV === 'production'
                             });
                         });
-                    } catch (error) {
+                    } catch {
                         // The `setAll` method was called from a Server Component.
                         // This can be ignored if you have middleware refreshing
                         // user sessions.
