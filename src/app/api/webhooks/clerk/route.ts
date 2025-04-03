@@ -1,9 +1,9 @@
 // src/app/api/webhooks/clerk/route.ts
-import { Webhook } from 'svix';
-import { headers } from 'next/headers';
-import { type WebhookEvent } from '@clerk/nextjs/server';
-import { NextResponse } from 'next/server';
-import { createSupabaseAdminClient } from '@/lib/supabase/server'; // Adjust path if needed
+import {Webhook} from 'svix';
+import {headers} from 'next/headers';
+import {type WebhookEvent} from '@clerk/nextjs/server';
+import {NextResponse} from 'next/server';
+import {createSupabaseAdminClient} from '@/lib/supabase/server'; // Adjust path if needed
 
 export async function POST(req: Request) {
     // You can find this in the Clerk Dashboard -> Webhooks -> choose the webhook
