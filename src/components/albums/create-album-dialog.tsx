@@ -15,19 +15,41 @@ import {
 import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Textarea} from "@/components/ui/textarea"
+import { createAlbum } from "@/lib/actions/albums"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 export function CreateAlbumDialog() {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
+  const [clientGreeting, setClientGreeting] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Here you would typically make an API call to create the album
-    console.log("Creating album:", { name, description })
-    setOpen(false)
-    setName("")
-    setDescription("")
+    setIsLoading(true)
+
+    try {
+      const formData = new FormData()
+      formData.append('name', name)
+      formData.append('description', description)
+      formData.append('client_greeting', clientGreeting)
+
+      await createAlbum(formData)
+      toast.success("Album created successfully")
+      setOpen(false)
+      setName("")
+      setDescription("")
+      setClientGreeting("")
+      router.refresh()
+    } catch (error) {
+      toast.error("Failed to create album")
+      console.error(error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -55,6 +77,7 @@ export function CreateAlbumDialog() {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Enter album name"
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="grid gap-2">
@@ -64,11 +87,24 @@ export function CreateAlbumDialog() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Enter album description"
+                disabled={isLoading}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="client_greeting">Client Greeting</Label>
+              <Textarea
+                id="client_greeting"
+                value={clientGreeting}
+                onChange={(e) => setClientGreeting(e.target.value)}
+                placeholder="Enter a greeting message for clients"
+                disabled={isLoading}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit">Create Album</Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Creating..." : "Create Album"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

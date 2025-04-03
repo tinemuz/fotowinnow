@@ -6,44 +6,21 @@ import {Button} from "@/components/ui/button"
 import {Card, CardContent, CardDescription, CardHeader, CardTitle,} from "@/components/ui/card"
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,} from "@/components/ui/dropdown-menu"
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs"
+import { Album } from "@/types/database"
 
-// This would typically come from your database
-const mockAlbums = [
-  {
-    id: "1",
-    name: "Family Photos",
-    description: "Photos from family gatherings",
-    imageCount: 24,
-    createdAt: "2024-03-20",
-  },
-  {
-    id: "2",
-    name: "Vacation 2024",
-    description: "Photos from our recent vacation",
-    imageCount: 156,
-    createdAt: "2024-03-15",
-  },
-]
+interface AlbumsListProps {
+  initialAlbums: Album[]
+}
 
-const mockArchivedAlbums = [
-  {
-    id: "3",
-    name: "Old Memories",
-    description: "Archived photos from 2023",
-    imageCount: 89,
-    createdAt: "2023-12-31",
-  },
-]
-
-export function AlbumsList() {
-  const [activeAlbums, setActiveAlbums] = useState(mockAlbums)
-  const [archivedAlbums, setArchivedAlbums] = useState(mockArchivedAlbums)
+export function AlbumsList({ initialAlbums }: AlbumsListProps) {
+  const [activeAlbums, setActiveAlbums] = useState(initialAlbums.filter(album => album.status !== 'archived'))
+  const [archivedAlbums, setArchivedAlbums] = useState(initialAlbums.filter(album => album.status === 'archived'))
 
   const handleArchive = (albumId: string) => {
     const album = activeAlbums.find((a) => a.id === albumId)
     if (album) {
       setActiveAlbums(activeAlbums.filter((a) => a.id !== albumId))
-      setArchivedAlbums([...archivedAlbums, album])
+      setArchivedAlbums([...archivedAlbums, { ...album, status: 'archived' }])
     }
   }
 
@@ -51,8 +28,18 @@ export function AlbumsList() {
     const album = archivedAlbums.find((a) => a.id === albumId)
     if (album) {
       setArchivedAlbums(archivedAlbums.filter((a) => a.id !== albumId))
-      setActiveAlbums([...activeAlbums, album])
+      setActiveAlbums([...activeAlbums, { ...album, status: 'active' }])
     }
+  }
+
+  if (initialAlbums.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <IconFolder className="h-12 w-12 text-muted-foreground mb-4" />
+        <h3 className="text-lg font-medium">No albums yet</h3>
+        <p className="text-sm text-muted-foreground">Create your first album to get started</p>
+      </div>
+    )
   }
 
   return (
@@ -89,7 +76,7 @@ export function AlbumsList() {
               </CardHeader>
               <CardContent>
                 <div className="text-sm text-muted-foreground truncate">
-                  {album.imageCount} images • Created {album.createdAt}
+                  Created {new Date(album.created_at).toLocaleDateString()}
                 </div>
               </CardContent>
             </Card>
@@ -124,7 +111,7 @@ export function AlbumsList() {
               </CardHeader>
               <CardContent>
                 <div className="text-sm text-muted-foreground truncate">
-                  {album.imageCount} images • Created {album.createdAt}
+                  Created {new Date(album.created_at).toLocaleDateString()}
                 </div>
               </CardContent>
             </Card>

@@ -53,42 +53,79 @@ export async function getAlbums(): Promise<Album[]> {
     return albums || [];
 }
 
-export async function createAlbum(formData: FormData) {
-    const profileId = await getAuthenticatedProfileId();
+// Define expected return type for better type safety
+type CreateAlbumResult =
+    | { success: true; data: Album }
+    | { success: false; error: string; details?: any };
 
-    const supabase = await createSupabaseServerActionClient();
+export async function createAlbum(formData: FormData): Promise<CreateAlbumResult> {
+    try {
+        const profileId = await getAuthenticatedProfileId();
+        const supabase = await createSupabaseServerActionClient();
 
-    // Parse and validate the form data
-    const rawData = {
-        name: formData.get('name'),
-        description: formData.get('description'),
-        client_greeting: formData.get('client_greeting'),
-    };
+        // Parse and validate the form data
+        const rawData = {
+            name: formData.get('name'),
+            description: formData.get('description'),
+            client_greeting: formData.get('client_greeting'),
+        };
 
-    const validatedData = createAlbumSchema.parse(rawData);
+        // Validate using safeParse for better error handling
+        const validationResult = createAlbumSchema.safeParse(rawData);
+        if (!validationResult.success) {
+            console.error("Validation Error:", validationResult.error.flatten());
+            return {
+                success: false,
+                error: 'Invalid input data',
+                details: validationResult.error.flatten().fieldErrors,
+            };
+        }
 
-    // Create the album
-    const { data: album, error: createError } = await supabase
-        .from('albums')
-        .insert([
-            {
-                owner_id: profileId,
-                name: validatedData.name,
-                description: validatedData.description || null,
-                client_greeting: validatedData.client_greeting || null,
-                status: 'draft',
-                current_review_cycle: 0,
-            }
-        ])
-        .select()
-        .single();
+        const validatedData = validationResult.data;
 
-    if (createError) {
-        throw new Error('Failed to create album');
+        // Create the album
+        const { data: album, error: createError } = await supabase
+            .from('albums')
+            .insert([
+                {
+                    owner_id: profileId,
+                    name: validatedData.name,
+                    description: validatedData.description || null,
+                    client_greeting: validatedData.client_greeting || null,
+                    status: 'draft',
+                    current_review_cycle: 0,
+                }
+            ])
+            .select()
+            .single();
+
+        if (createError) {
+            console.error('Error creating album:', createError);
+            return {
+                success: false,
+                error: 'Failed to create album in database',
+            };
+        }
+
+        if (!album) {
+            return {
+                success: false,
+                error: 'Album was not created',
+            };
+        }
+
+        // Revalidate the albums page
+        revalidatePath('/dashboard/albums');
+
+        return {
+            success: true,
+            data: album,
+        };
+    } catch (error) {
+        console.error('Unexpected error in createAlbum:', error);
+        return {
+            success: false,
+            error: 'An unexpected error occurred while creating the album',
+        };
     }
-
-    // Revalidate the albums page
-    revalidatePath('/dashboard/albums');
-
-    return album;
 }
