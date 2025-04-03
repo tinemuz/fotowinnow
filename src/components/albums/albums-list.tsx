@@ -28,7 +28,7 @@ export function AlbumsList({ initialAlbums }: AlbumsListProps) {
     const album = archivedAlbums.find((a) => a.id === albumId)
     if (album) {
       setArchivedAlbums(archivedAlbums.filter((a) => a.id !== albumId))
-      setActiveAlbums([...activeAlbums, { ...album, status: 'active' }])
+      setActiveAlbums([...activeAlbums, { ...album, status: 'draft' }])
     }
   }
 

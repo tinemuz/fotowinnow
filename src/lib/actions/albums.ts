@@ -56,7 +56,7 @@ export async function getAlbums(): Promise<Album[]> {
 // Define expected return type for better type safety
 type CreateAlbumResult =
     | { success: true; data: Album }
-    | { success: false; error: string; details?: any };
+    | { success: false; error: string; details?: Record<string, string[]> };
 
 export async function createAlbum(formData: FormData): Promise<CreateAlbumResult> {
     try {
