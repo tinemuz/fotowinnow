@@ -13,13 +13,18 @@ interface AlbumsListProps {
 }
 
 export function AlbumsList({ initialAlbums }: AlbumsListProps) {
-  const [activeAlbums, setActiveAlbums] = useState(initialAlbums.filter(album => album.status !== 'archived'))
+  const [activeAlbums, setActiveAlbums] = useState(initialAlbums.filter(album => album.status === 'published'))
+  const [draftAlbums, setDraftAlbums] = useState(initialAlbums.filter(album => album.status === 'draft'))
   const [archivedAlbums, setArchivedAlbums] = useState(initialAlbums.filter(album => album.status === 'archived'))
 
   const handleArchive = (albumId: string) => {
-    const album = activeAlbums.find((a) => a.id === albumId)
+    const album = activeAlbums.find((a) => a.id === albumId) || draftAlbums.find((a) => a.id === albumId)
     if (album) {
-      setActiveAlbums(activeAlbums.filter((a) => a.id !== albumId))
+      if (album.status === 'published') {
+        setActiveAlbums(activeAlbums.filter((a) => a.id !== albumId))
+      } else {
+        setDraftAlbums(draftAlbums.filter((a) => a.id !== albumId))
+      }
       setArchivedAlbums([...archivedAlbums, { ...album, status: 'archived' }])
     }
   }
@@ -28,7 +33,7 @@ export function AlbumsList({ initialAlbums }: AlbumsListProps) {
     const album = archivedAlbums.find((a) => a.id === albumId)
     if (album) {
       setArchivedAlbums(archivedAlbums.filter((a) => a.id !== albumId))
-      setActiveAlbums([...activeAlbums, { ...album, status: 'draft' }])
+      setDraftAlbums([...draftAlbums, { ...album, status: 'draft' }])
     }
   }
 
@@ -46,6 +51,7 @@ export function AlbumsList({ initialAlbums }: AlbumsListProps) {
     <Tabs defaultValue="active" className="w-full">
       <TabsList>
         <TabsTrigger value="active">Active Albums</TabsTrigger>
+        <TabsTrigger value="draft">Draft Albums</TabsTrigger>
         <TabsTrigger value="archived">Archived</TabsTrigger>
       </TabsList>
       <TabsContent value="active" className="mt-4">
@@ -56,6 +62,41 @@ export function AlbumsList({ initialAlbums }: AlbumsListProps) {
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2 text-base truncate pr-2">
                     <IconFolder className="h-5 w-5 text-primary flex-shrink-0" />
+                    <span className="truncate">{album.name}</span>
+                  </CardTitle>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="flex-shrink-0">
+                        <span className="sr-only">Open menu</span>
+                        <IconArchive className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleArchive(album.id)}>
+                        Archive Album
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                <CardDescription className="truncate">{album.description}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted-foreground truncate">
+                  Created {new Date(album.created_at).toLocaleDateString()}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </TabsContent>
+      <TabsContent value="draft" className="mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {draftAlbums.map((album) => (
+            <Card key={album.id} className="min-w-[250px] min-h-[150px]">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-base truncate pr-2">
+                    <IconFolder className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                     <span className="truncate">{album.name}</span>
                   </CardTitle>
                   <DropdownMenu>
