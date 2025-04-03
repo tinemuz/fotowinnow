@@ -2,10 +2,10 @@
 
 import sharp from "sharp";
 import path from 'path';
-import {Cutive_Mono, IBM_Plex_Mono, JetBrains_Mono, Roboto_Mono, Source_Code_Pro, Space_Mono} from "next/font/google";
-import {watermarkInputSchema} from "@/lib/utils/validation";
-import {WatermarkResult} from "@/types/image";
-import {auth} from "@clerk/nextjs/server";
+import { Cutive_Mono, IBM_Plex_Mono, JetBrains_Mono, Roboto_Mono, Source_Code_Pro, Space_Mono } from "next/font/google";
+import { watermarkInputSchema } from "@/lib/utils/validation";
+import { WatermarkResult } from "@/types/image";
+import { auth } from "@clerk/nextjs/server";
 
 // Configure font paths
 path.resolve(process.cwd(), 'fonts', 'fonts.conf');
@@ -42,9 +42,12 @@ const fontFamilyMap = {
 };
 
 export async function addWatermark(formData: FormData): Promise<WatermarkResult> {
+    console.log('Starting watermark process');
     const { userId } = await auth();
+    console.log('Authentication check - User ID:', userId);
 
     if (!userId) {
+        console.error('Watermark process failed - User not authenticated');
         return { success: false, error: "Authentication required" };
     }
 
@@ -55,6 +58,13 @@ export async function addWatermark(formData: FormData): Promise<WatermarkResult>
         const watermark = formData.get('watermark') as string;
         const fontName = formData.get('fontName') as string;
 
+        console.log('Processing watermark request:', {
+            quality,
+            watermarkLength: watermark?.length,
+            fontName,
+            fileSize: fileBase64?.length
+        });
+
         // Validate using zod
         const input = watermarkInputSchema.parse({
             fileBase64,
@@ -62,14 +72,20 @@ export async function addWatermark(formData: FormData): Promise<WatermarkResult>
             watermark,
             fontName
         });
+        console.log('Input validation successful');
 
-        // ... existing code ...
         const fileBuffer = Buffer.from(input.fileBase64, 'base64');
         const image = sharp(fileBuffer, {
             failOnError: false,
         });
 
         const metadata = await image.metadata();
+        console.log('Image metadata:', {
+            width: metadata.width,
+            height: metadata.height,
+            format: metadata.format
+        });
+
         const width = metadata.width ?? 0;
         const height = metadata.height ?? 0;
 
@@ -80,8 +96,20 @@ export async function addWatermark(formData: FormData): Promise<WatermarkResult>
             "4K": 2160,
         }[input.quality] ?? 512;
 
+        console.log('Calculated target size:', {
+            quality: input.quality,
+            targetSize,
+            originalWidth: width,
+            originalHeight: height
+        });
+
         const scaleFactor = targetSize / 512;
-        const fontSize = Math.round(24 * scaleFactor); // Base font size: 24px
+        const fontSize = Math.round(24 * scaleFactor);
+        console.log('Watermark settings:', {
+            scaleFactor,
+            fontSize,
+            fontFamily: fontFamilyMap[input.fontName as keyof typeof fontFamilyMap]
+        });
 
         const aspectRatio = width / height;
         const [newWidth, newHeight] = width > height
@@ -132,9 +160,14 @@ export async function addWatermark(formData: FormData): Promise<WatermarkResult>
             .png({ compressionLevel: 6 })
             .toBuffer();
 
+        console.log('Watermark process completed successfully');
         return { success: true, result: result.toString('base64') };
     } catch (error) {
-        console.error("Error processing image:", error);
+        console.error("Error processing image:", {
+            error,
+            errorMessage: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined
+        });
         return { success: false, error: "Error processing image" };
     }
 } 
