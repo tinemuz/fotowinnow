@@ -92,6 +92,33 @@ export async function getAlbums(): Promise<Album[]> {
     return albums || [];
 }
 
+export async function getAlbum(albumId: string): Promise<Album | null> {
+    console.log('Starting getAlbum process');
+    const profileId = await getAuthenticatedProfileId();
+    console.log('Retrieved profile ID:', profileId);
+
+    const supabase = await createSupabaseServerActionClient();
+    console.log('Supabase client created, querying album');
+
+    const { data: album, error: albumError } = await supabase
+        .from('albums')
+        .select('*')
+        .eq('id', albumId)
+        .eq('owner_id', profileId)
+        .single();
+
+    if (albumError) {
+        console.error('Error fetching album:', {
+            error: albumError,
+            albumId,
+            profileId
+        });
+        return null;
+    }
+
+    return album;
+}
+
 // Define expected return type for better type safety
 type CreateAlbumResult =
     | { success: true; data: Album }

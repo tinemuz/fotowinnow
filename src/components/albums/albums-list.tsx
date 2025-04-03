@@ -7,6 +7,7 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle,} from "@/comp
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,} from "@/components/ui/dropdown-menu"
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs"
 import { Album } from "@/types/database"
+import Link from "next/link"
 
 interface AlbumsListProps {
   initialAlbums: Album[]
@@ -57,105 +58,120 @@ export function AlbumsList({ initialAlbums }: AlbumsListProps) {
       <TabsContent value="active" className="mt-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {activeAlbums.map((album) => (
-            <Card key={album.id} className="min-w-[250px] min-h-[150px]">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2 text-base truncate pr-2">
-                    <IconFolder className="h-5 w-5 text-primary flex-shrink-0" />
-                    <span className="truncate">{album.name}</span>
-                  </CardTitle>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="flex-shrink-0">
-                        <span className="sr-only">Open menu</span>
-                        <IconArchive className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleArchive(album.id)}>
-                        Archive Album
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <CardDescription className="truncate">{album.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-sm text-muted-foreground truncate">
-                  Created {new Date(album.created_at).toLocaleDateString()}
-                </div>
-              </CardContent>
-            </Card>
+            <Link href={`/dashboard/albums/${album.id}`} key={album.id}>
+              <Card className="min-w-[250px] min-h-[150px] hover:bg-accent/50 transition-colors">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-base truncate pr-2">
+                      <IconFolder className="h-5 w-5 text-primary flex-shrink-0" />
+                      <span className="truncate">{album.name}</span>
+                    </CardTitle>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="flex-shrink-0" onClick={(e) => e.preventDefault()}>
+                          <span className="sr-only">Open menu</span>
+                          <IconArchive className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={(e) => {
+                          e.preventDefault()
+                          handleArchive(album.id)
+                        }}>
+                          Archive Album
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  <CardDescription className="truncate">{album.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-sm text-muted-foreground truncate">
+                    Created {new Date(album.created_at).toLocaleDateString()}
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       </TabsContent>
       <TabsContent value="draft" className="mt-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {draftAlbums.map((album) => (
-            <Card key={album.id} className="min-w-[250px] min-h-[150px]">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2 text-base truncate pr-2">
-                    <IconFolder className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                    <span className="truncate">{album.name}</span>
-                  </CardTitle>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="flex-shrink-0">
-                        <span className="sr-only">Open menu</span>
-                        <IconArchive className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleArchive(album.id)}>
-                        Archive Album
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <CardDescription className="truncate">{album.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-sm text-muted-foreground truncate">
-                  Created {new Date(album.created_at).toLocaleDateString()}
-                </div>
-              </CardContent>
-            </Card>
+            <Link href={`/dashboard/albums/${album.id}`} key={album.id}>
+              <Card className="min-w-[250px] min-h-[150px] hover:bg-accent/50 transition-colors">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-base truncate pr-2">
+                      <IconFolder className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                      <span className="truncate">{album.name}</span>
+                    </CardTitle>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="flex-shrink-0" onClick={(e) => e.preventDefault()}>
+                          <span className="sr-only">Open menu</span>
+                          <IconArchive className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={(e) => {
+                          e.preventDefault()
+                          handleArchive(album.id)
+                        }}>
+                          Archive Album
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  <CardDescription className="truncate">{album.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-sm text-muted-foreground truncate">
+                    Created {new Date(album.created_at).toLocaleDateString()}
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       </TabsContent>
       <TabsContent value="archived" className="mt-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {archivedAlbums.map((album) => (
-            <Card key={album.id} className="min-w-[250px] min-h-[150px]">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2 text-base truncate pr-2">
-                    <IconFolder className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                    <span className="truncate">{album.name}</span>
-                  </CardTitle>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="flex-shrink-0">
-                        <span className="sr-only">Open menu</span>
-                        <IconArchive className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleRestore(album.id)}>
-                        Restore Album
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <CardDescription className="truncate">{album.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-sm text-muted-foreground truncate">
-                  Created {new Date(album.created_at).toLocaleDateString()}
-                </div>
-              </CardContent>
-            </Card>
+            <Link href={`/dashboard/albums/${album.id}`} key={album.id}>
+              <Card className="min-w-[250px] min-h-[150px] hover:bg-accent/50 transition-colors">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-base truncate pr-2">
+                      <IconFolder className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                      <span className="truncate">{album.name}</span>
+                    </CardTitle>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="flex-shrink-0" onClick={(e) => e.preventDefault()}>
+                          <span className="sr-only">Open menu</span>
+                          <IconArchive className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={(e) => {
+                          e.preventDefault()
+                          handleRestore(album.id)
+                        }}>
+                          Restore Album
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  <CardDescription className="truncate">{album.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-sm text-muted-foreground truncate">
+                    Created {new Date(album.created_at).toLocaleDateString()}
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       </TabsContent>

@@ -32,6 +32,51 @@ const fileSchema = z.object({
     size: z.number().max(10 * 1024 * 1024, 'File size must be less than 10MB'),
 });
 
+async function getAuthenticatedProfileId() {
+    const { userId } = await auth();
+    console.log('Authentication attempt - Clerk User ID:', userId);
+
+    if (!userId) {
+        console.error('Authentication failed - No Clerk user ID found');
+        throw new Error('User not authenticated');
+    }
+
+    // Use the admin client since we're just querying the profiles table
+    const supabase = createSupabaseAdminClient();
+    console.log('Supabase admin client created, querying profiles table for user:', userId);
+
+    const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('clerk_user_id', userId)
+        .single();
+
+    if (profileError) {
+        console.error('Profile query error:', {
+            error: profileError,
+            clerkUserId: userId,
+            query: 'profiles.select(id).eq(clerk_user_id, userId).single()',
+            errorDetails: {
+                code: profileError.code,
+                message: profileError.message,
+                details: profileError.details,
+                hint: profileError.hint
+            }
+        });
+        throw new Error(`Profile not found for Clerk user ID: ${userId}`);
+    }
+
+    if (!profile) {
+        console.error('No profile found for user:', {
+            clerkUserId: userId,
+            query: 'profiles.select(id).eq(clerk_user_id, userId).single()'
+        });
+        throw new Error(`Profile not found for Clerk user ID: ${userId}`);
+    }
+
+    return profile.id;
+}
+
 export async function uploadPhoto(formData: FormData): Promise<UploadPhotoResult> {
     console.log('Starting uploadPhoto process');
     try {
@@ -162,4 +207,51 @@ export async function uploadPhoto(formData: FormData): Promise<UploadPhotoResult
         console.error('Unexpected error in uploadPhoto:', error);
         return { success: false, error: 'An unexpected error occurred while uploading the photo.' };
     }
+}
+
+export async function getPhotos(albumId: string): Promise<Photo[]> {
+    console.log('Starting getPhotos process');
+    const profileId = await getAuthenticatedProfileId();
+    console.log('Retrieved profile ID:', profileId);
+
+    const supabase = await createSupabaseServerActionClient();
+    console.log('Supabase client created, querying photos');
+
+    // First verify album ownership
+    const { data: album, error: albumError } = await supabase
+        .from('albums')
+        .select('owner_id')
+        .eq('id', albumId)
+        .single();
+
+    if (albumError || !album) {
+        console.error('Album query error:', albumError);
+        return [];
+    }
+
+    if (album.owner_id !== profileId) {
+        console.error('Unauthorized album access:', {
+            profileId,
+            albumOwnerId: album.owner_id
+        });
+        return [];
+    }
+
+    // Get the photos
+    const { data: photos, error: photosError } = await supabase
+        .from('photos')
+        .select('*')
+        .eq('album_id', albumId)
+        .order('order_in_album', { ascending: true });
+
+    if (photosError) {
+        console.error('Error fetching photos:', {
+            error: photosError,
+            albumId,
+            profileId
+        });
+        return [];
+    }
+
+    return photos || [];
 } 
