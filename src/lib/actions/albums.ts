@@ -1,7 +1,7 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
-import { createSupabaseServerActionClient } from '../supabase/server';
+import { createSupabaseServerActionClient, createSupabaseAdminClient } from '../supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { Album } from '@/types/database';
@@ -14,15 +14,16 @@ const createAlbumSchema = z.object({
 
 async function getAuthenticatedProfileId() {
     const { userId } = await auth();
-    console.log('Authentication attempt - User ID:', userId);
+    console.log('Authentication attempt - Clerk User ID:', userId);
 
     if (!userId) {
-        console.error('Authentication failed - No user ID found');
+        console.error('Authentication failed - No Clerk user ID found');
         throw new Error('User not authenticated');
     }
 
-    const supabase = await createSupabaseServerActionClient();
-    console.log('Supabase client created, querying profiles table for user:', userId);
+    // Use the admin client since we're just querying the profiles table
+    const supabase = createSupabaseAdminClient();
+    console.log('Supabase admin client created, querying profiles table for user:', userId);
 
     const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -33,18 +34,30 @@ async function getAuthenticatedProfileId() {
     if (profileError) {
         console.error('Profile query error:', {
             error: profileError,
-            userId: userId,
-            query: 'profiles.select(id).eq(clerk_user_id, userId).single()'
+            clerkUserId: userId,
+            query: 'profiles.select(id).eq(clerk_user_id, userId).single()',
+            errorDetails: {
+                code: profileError.code,
+                message: profileError.message,
+                details: profileError.details,
+                hint: profileError.hint
+            }
         });
-        throw new Error('Profile not found');
+        throw new Error(`Profile not found for Clerk user ID: ${userId}`);
     }
 
     if (!profile) {
-        console.error('No profile found for user:', userId);
-        throw new Error('Profile not found');
+        console.error('No profile found for user:', {
+            clerkUserId: userId,
+            query: 'profiles.select(id).eq(clerk_user_id, userId).single()'
+        });
+        throw new Error(`Profile not found for Clerk user ID: ${userId}`);
     }
 
-    console.log('Successfully retrieved profile ID:', profile.id);
+    console.log('Successfully retrieved profile ID:', {
+        profileId: profile.id,
+        clerkUserId: userId
+    });
     return profile.id;
 }
 

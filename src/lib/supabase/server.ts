@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { type ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension/adapters/request-cookies';
+import { auth } from '@clerk/nextjs/server';
 
 // Function to create Supabase client for Server Components, Server Actions, Route Handlers
 // It reads/writes cookies to manage the user's session server-side.
@@ -60,9 +61,19 @@ export function createSupabaseServerClient(cookieStore: ReadonlyRequestCookies) 
 // Often, createSupabaseServerClient can be used for these too, but this provides a clear separation.
 export async function createSupabaseServerActionClient() {
     const cookieStore = cookies();
-    return createSupabaseServerClient(await cookieStore);
-}
+    const { sessionId } = await auth();
 
+    const client = createSupabaseServerClient(cookieStore as unknown as ReadonlyRequestCookies);
+
+    if (sessionId) {
+        await client.auth.setSession({
+            access_token: sessionId,
+            refresh_token: sessionId
+        });
+    }
+
+    return client;
+}
 
 // Function to create a Supabase Admin client using the SERVICE_ROLE_KEY
 // WARNING: Use this client ONLY in secure server-side environments (like API routes, server actions protected from client invocation).
