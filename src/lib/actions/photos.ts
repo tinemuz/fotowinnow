@@ -15,8 +15,12 @@ export interface Photo {
     filename_original: string;
     mime_type: string | null;
     size_bytes: number | null;
+    watermarked_size_bytes: number | null;
     order_in_album: number | null;
     uploaded_at: string;
+    width: number | null;
+    height: number | null;
+    created_at: string;
 }
 
 // Define the result type

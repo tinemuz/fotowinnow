@@ -342,11 +342,12 @@ export async function applyAlbumWatermark(albumId: string): Promise<{
                     continue;
                 }
 
-                // Update photo record with watermarked path
+                // Update photo record with watermarked path and size
                 const { error: updateError } = await supabase
                     .from('photos')
                     .update({
-                        storage_path_watermarked: watermarkedPath
+                        storage_path_watermarked: watermarkedPath,
+                        watermarked_size_bytes: watermarkedBuffer.length
                     })
                     .eq('id', batch.id);
 

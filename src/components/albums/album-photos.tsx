@@ -4,7 +4,7 @@ import { Photo } from "@/lib/actions/photos"
 import Image from "next/image"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { CircleAlert, ALargeSmall, CircleX, Check } from "lucide-react"
+import { CircleAlert, ALargeSmall, CircleX, Check, Info } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -15,6 +15,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Progress } from "@/components/ui/progress"
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 
 interface AlbumPhotosProps {
   photos: Photo[]
@@ -37,6 +39,7 @@ export function AlbumPhotos({ photos: initialPhotos, isLoading, error, albumId }
   const [viewMode, setViewMode] = useState<"original" | "watermarked">("original")
   const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set())
   const [isDeleting, setIsDeleting] = useState(false)
+  const [showImageDetails, setShowImageDetails] = useState(false)
   const supabase = createSupabaseClient()
 
   // Calculate progress based on photos
@@ -180,14 +183,28 @@ export function AlbumPhotos({ photos: initialPhotos, isLoading, error, albumId }
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "original" | "watermarked")}>
-          <TabsList>
-            <TabsTrigger value="original">Original</TabsTrigger>
-            <TabsTrigger value="watermarked" disabled={!photos.some(p => p.storage_path_watermarked)}>
-              Watermarked
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="flex items-center gap-4">
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "original" | "watermarked")}>
+            <TabsList>
+              <TabsTrigger value="original">Original</TabsTrigger>
+              <TabsTrigger value="watermarked" disabled={!photos.some(p => p.storage_path_watermarked)}>
+                Watermarked
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <div className="flex items-center gap-2">
+            <Switch
+              id="show-details"
+              checked={showImageDetails}
+              onCheckedChange={setShowImageDetails}
+            />
+            <Label htmlFor="show-details" className="flex items-center gap-1 cursor-pointer">
+              <Info className="h-4 w-4" />
+              Show Details
+            </Label>
+          </div>
+        </div>
 
         <div className="flex items-center gap-4">
           {selectedPhotos.size > 0 && (
@@ -261,10 +278,22 @@ export function AlbumPhotos({ photos: initialPhotos, isLoading, error, albumId }
                       })
                     }}
                   />
-                  <div className={`absolute top-2 right-2 z-10 ${selectedPhotos.has(photo.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity duration-200`}>
-                    <div className={`rounded-full p-1.5 ${selectedPhotos.has(photo.id) ? 'bg-primary text-primary-foreground' : 'bg-white/20 text-white'}`}>
-                      <Check className="h-4 w-4" />
+                  
+                  {showImageDetails && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-black/75 text-white p-2 text-xs">
+                      <div className="flex justify-between">
+                        <span>Type: {photo.filename_original.split('.').pop()?.toUpperCase()}</span>
+                        <span>Size: {photo.watermarked_size_bytes ? `${(photo.watermarked_size_bytes / 1024 / 1024).toFixed(2)} MB` : 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Resolution: 1080p</span>
+                        <span>Created: {new Date(photo.uploaded_at).toLocaleDateString()}</span>
+                      </div>
                     </div>
+                  )}
+                  
+                  <div className={`absolute top-2 right-2 rounded-full p-1.5 ${selectedPhotos.has(photo.id) ? 'bg-primary text-primary-foreground' : 'bg-white/20 text-white'}`}>
+                    <Check className="h-4 w-4" />
                   </div>
                 </div>
               ))
@@ -305,6 +334,18 @@ export function AlbumPhotos({ photos: initialPhotos, isLoading, error, albumId }
                   })
                 }}
               />
+              {showImageDetails && (
+                <div className="absolute bottom-0 left-0 right-0 bg-black/75 text-white p-2 text-xs">
+                  <div className="flex justify-between">
+                    <span>Type: {photo.filename_original.split('.').pop()?.toUpperCase()}</span>
+                    <span>Size: {photo.size_bytes ? `${(photo.size_bytes / 1024 / 1024).toFixed(2)} MB` : 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Resolution: {photo.width && photo.height ? `${photo.width}x${photo.height}` : 'N/A'}</span>
+                    <span>Created: {new Date(photo.uploaded_at).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              )}
               <div className={`absolute top-2 right-2 z-10 ${selectedPhotos.has(photo.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity duration-200`}>
                 <div className={`rounded-full p-1.5 ${selectedPhotos.has(photo.id) ? 'bg-primary text-primary-foreground' : 'bg-white/20 text-white'}`}>
                   <Check className="h-4 w-4" />
