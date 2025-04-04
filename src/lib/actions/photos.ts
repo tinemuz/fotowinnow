@@ -398,4 +398,123 @@ export async function getSignedUrls(storagePaths: string[]): Promise<{ [key: str
         console.error('Unexpected error in getSignedUrls:', error);
         throw error;
     }
+}
+
+export async function deletePhoto(photoId: string): Promise<{ success: boolean; error?: string }> {
+    console.log('Starting deletePhoto process for photoId:', photoId);
+    try {
+        const { userId: clerkUserId } = await auth();
+        if (!clerkUserId) {
+            console.error('Authentication failed - No Clerk user ID found');
+            return { success: false, error: 'Unauthorized: User not logged in.' };
+        }
+
+        const supabaseAdmin = createSupabaseAdminClient();
+        const supabase = await createSupabaseServerActionClient();
+
+        // Get user's profile ID
+        console.log('Fetching profile for Clerk user ID:', clerkUserId);
+        const { data: profile, error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .select('id')
+            .eq('clerk_user_id', clerkUserId)
+            .single();
+
+        if (profileError || !profile) {
+            console.error('Profile query error:', profileError);
+            return { success: false, error: 'User profile not found.' };
+        }
+
+        console.log('Profile found:', { profileId: profile.id });
+
+        // Get photo details and verify ownership
+        console.log('Fetching photo details for photoId:', photoId);
+        const { data: photo, error: photoError } = await supabaseAdmin
+            .from('photos')
+            .select('*, albums!inner(owner_id)')
+            .eq('id', photoId)
+            .single();
+
+        if (photoError || !photo) {
+            console.error('Photo query error:', photoError);
+            return { success: false, error: 'Photo not found.' };
+        }
+
+        console.log('Photo found:', {
+            photoId,
+            albumId: photo.album_id,
+            albumOwnerId: photo.albums.owner_id,
+            profileId: profile.id
+        });
+
+        if (photo.albums.owner_id !== profile.id) {
+            console.error('Unauthorized photo access:', {
+                profileId: profile.id,
+                albumOwnerId: photo.albums.owner_id,
+                photoId
+            });
+            return { success: false, error: 'Unauthorized: You do not own this photo.' };
+        }
+
+        // Delete from storage
+        const storagePaths = [photo.storage_path_original];
+        if (photo.storage_path_watermarked) {
+            storagePaths.push(photo.storage_path_watermarked);
+        }
+
+        console.log('Deleting from storage:', storagePaths);
+        const { error: storageError } = await supabase.storage
+            .from('photos')
+            .remove(storagePaths);
+
+        if (storageError) {
+            console.error('Storage deletion error:', storageError);
+            return { success: false, error: 'Failed to delete photo from storage.' };
+        }
+
+        console.log('Storage deletion successful');
+
+        // Delete from database
+        console.log('Deleting from database:', photoId);
+        const { error: dbError } = await supabase
+            .from('photos')
+            .delete()
+            .eq('id', photoId);
+
+        if (dbError) {
+            console.error('Database deletion error:', dbError);
+            return { success: false, error: 'Failed to delete photo from database.' };
+        }
+
+        console.log('Database deletion successful');
+
+        // Verify the photo was actually deleted
+        console.log('Verifying photo deletion...');
+        const { data: verifyPhoto, error: verifyError } = await supabase
+            .from('photos')
+            .select('id')
+            .eq('id', photoId)
+            .single();
+
+        if (verifyError && verifyError.code === 'PGRST116') {
+            // PGRST116 is "no rows returned" which is what we want
+            console.log('Verification successful: Photo record not found in database');
+        } else if (verifyPhoto) {
+            console.error('Verification failed: Photo record still exists in database', verifyPhoto);
+            return { success: false, error: 'Photo record was not deleted from database.' };
+        } else {
+            console.error('Verification error:', verifyError);
+            return { success: false, error: 'Failed to verify photo deletion.' };
+        }
+
+        // Revalidate the album page
+        console.log('Revalidating album page:', photo.album_id);
+        revalidatePath(`/dashboard/albums/${photo.album_id}`);
+
+        console.log('Photo deletion completed successfully');
+        return { success: true };
+    } catch (error) {
+        console.error('Unexpected error in deletePhoto:', error);
+        return { success: false, error: 'An unexpected error occurred while deleting the photo.' };
+    }
 } 

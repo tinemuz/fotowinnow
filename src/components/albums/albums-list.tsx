@@ -1,6 +1,6 @@
 "use client"
 
-import {useState} from "react"
+import {useState, useEffect} from "react"
 import {IconArchive, IconFolder} from "@tabler/icons-react"
 import {Button} from "@/components/ui/button"
 import {Card, CardContent, CardDescription, CardHeader, CardTitle,} from "@/components/ui/card"
@@ -8,6 +8,9 @@ import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs"
 import { Album } from "@/types/database"
 import Link from "next/link"
+import { supabase } from "@/lib/supabase/client"
+import { toast } from "sonner"
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 
 interface AlbumsListProps {
   initialAlbums: Album[]
@@ -18,23 +21,97 @@ export function AlbumsList({ initialAlbums }: AlbumsListProps) {
   const [draftAlbums, setDraftAlbums] = useState(initialAlbums.filter(album => album.status === 'draft'))
   const [archivedAlbums, setArchivedAlbums] = useState(initialAlbums.filter(album => album.status === 'archived'))
 
-  const handleArchive = (albumId: string) => {
-    const album = activeAlbums.find((a) => a.id === albumId) || draftAlbums.find((a) => a.id === albumId)
-    if (album) {
-      if (album.status === 'published') {
-        setActiveAlbums(activeAlbums.filter((a) => a.id !== albumId))
-      } else {
-        setDraftAlbums(draftAlbums.filter((a) => a.id !== albumId))
+  // Subscribe to album updates
+  useEffect(() => {
+    const albumsChannel = supabase
+      .channel('albums-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'albums'
+        },
+        (payload: RealtimePostgresChangesPayload<Album>) => {
+          const updatedAlbum = payload.new as Album;
+          if (!updatedAlbum?.id) return;
+
+          // Update the album in the appropriate list
+          const updateAlbumInList = (albums: Album[], setAlbums: (albums: Album[]) => void) => {
+            setAlbums(albums.map(album => 
+              album.id === updatedAlbum.id ? updatedAlbum : album
+            ));
+          };
+
+          // Remove from all lists first
+          setActiveAlbums(prev => prev.filter(a => a.id !== updatedAlbum.id));
+          setDraftAlbums(prev => prev.filter(a => a.id !== updatedAlbum.id));
+          setArchivedAlbums(prev => prev.filter(a => a.id !== updatedAlbum.id));
+
+          // Add to the appropriate list based on status
+          switch (updatedAlbum.status) {
+            case 'published':
+              setActiveAlbums(prev => [...prev, updatedAlbum]);
+              break;
+            case 'draft':
+              setDraftAlbums(prev => [...prev, updatedAlbum]);
+              break;
+            case 'archived':
+              setArchivedAlbums(prev => [...prev, updatedAlbum]);
+              break;
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      albumsChannel.unsubscribe();
+    };
+  }, []);
+
+  const handleArchive = async (albumId: string) => {
+    try {
+      const { error } = await supabase
+        .from('albums')
+        .update({ status: 'archived' })
+        .eq('id', albumId)
+
+      if (error) throw error
+
+      const album = activeAlbums.find((a) => a.id === albumId) || draftAlbums.find((a) => a.id === albumId)
+      if (album) {
+        if (album.status === 'published') {
+          setActiveAlbums(activeAlbums.filter((a) => a.id !== albumId))
+        } else {
+          setDraftAlbums(draftAlbums.filter((a) => a.id !== albumId))
+        }
+        setArchivedAlbums([...archivedAlbums, { ...album, status: 'archived' }])
+        toast.success("Album archived successfully")
       }
-      setArchivedAlbums([...archivedAlbums, { ...album, status: 'archived' }])
+    } catch (error) {
+      toast.error("Failed to archive album")
+      console.error(error)
     }
   }
 
-  const handleRestore = (albumId: string) => {
-    const album = archivedAlbums.find((a) => a.id === albumId)
-    if (album) {
-      setArchivedAlbums(archivedAlbums.filter((a) => a.id !== albumId))
-      setDraftAlbums([...draftAlbums, { ...album, status: 'draft' }])
+  const handleRestore = async (albumId: string) => {
+    try {
+      const { error } = await supabase
+        .from('albums')
+        .update({ status: 'draft' })
+        .eq('id', albumId)
+
+      if (error) throw error
+
+      const album = archivedAlbums.find((a) => a.id === albumId)
+      if (album) {
+        setArchivedAlbums(archivedAlbums.filter((a) => a.id !== albumId))
+        setDraftAlbums([...draftAlbums, { ...album, status: 'draft' }])
+        toast.success("Album restored successfully")
+      }
+    } catch (error) {
+      toast.error("Failed to restore album")
+      console.error(error)
     }
   }
 

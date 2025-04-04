@@ -4,11 +4,12 @@ import { Photo } from "@/lib/actions/photos"
 import Image from "next/image"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { CircleAlert, ALargeSmall } from "lucide-react"
+import { CircleAlert, ALargeSmall, CircleX, Check } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { applyAlbumWatermark } from "@/lib/actions/albums"
+import { deletePhoto } from "@/lib/actions/photos"
 import { toast } from "sonner"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Progress } from "@/components/ui/progress"
@@ -34,6 +35,8 @@ export function AlbumPhotos({ photos: initialPhotos, isLoading, error, albumId }
   const [photos, setPhotos] = useState(initialPhotos)
   const [isWatermarking, setIsWatermarking] = useState(false)
   const [viewMode, setViewMode] = useState<"original" | "watermarked">("original")
+  const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set())
+  const [isDeleting, setIsDeleting] = useState(false)
   const supabase = createSupabaseClient()
 
   // Calculate progress based on photos
@@ -57,20 +60,28 @@ export function AlbumPhotos({ photos: initialPhotos, isLoading, error, albumId }
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          event: '*', // Listen for all events (INSERT, UPDATE, DELETE)
           schema: 'public',
           table: 'photos',
           filter: `album_id=eq.${albumId}`
         },
         (payload: RealtimePostgresChangesPayload<Photo>) => {
-          const newPhoto = payload.new as Photo;
-          if (!newPhoto?.id) return;
-          
-          setPhotos(currentPhotos => 
-            currentPhotos.map(photo => 
-              photo.id === newPhoto.id ? { ...photo, ...newPhoto } : photo
+          if (payload.eventType === 'DELETE') {
+            // Remove the deleted photo from the state
+            setPhotos(currentPhotos => 
+              currentPhotos.filter(photo => photo.id !== payload.old.id)
             )
-          )
+          } else if (payload.eventType === 'UPDATE') {
+            // Update the photo in the state
+            const newPhoto = payload.new as Photo;
+            if (!newPhoto?.id) return;
+            
+            setPhotos(currentPhotos => 
+              currentPhotos.map(photo => 
+                photo.id === newPhoto.id ? { ...photo, ...newPhoto } : photo
+              )
+            )
+          }
         }
       )
       .subscribe()
@@ -102,6 +113,61 @@ export function AlbumPhotos({ photos: initialPhotos, isLoading, error, albumId }
     }
   }
 
+  const handlePhotoSelect = (photoId: string) => {
+    setSelectedPhotos(prev => {
+      const newSelection = new Set(prev)
+      if (newSelection.has(photoId)) {
+        newSelection.delete(photoId)
+      } else {
+        newSelection.add(photoId)
+      }
+      return newSelection
+    })
+  }
+
+  const handleDeleteSelected = async () => {
+    if (selectedPhotos.size === 0) return
+    
+    console.log('Starting deletion of selected photos:', Array.from(selectedPhotos));
+    setIsDeleting(true)
+    try {
+      const deletePromises = Array.from(selectedPhotos).map(photoId => {
+        console.log('Sending delete request for photoId:', photoId);
+        return deletePhoto(photoId);
+      });
+      
+      console.log('Waiting for all delete operations to complete...');
+      const results = await Promise.all(deletePromises);
+      
+      console.log('Delete results:', results);
+      const failedCount = results.filter((r: { success: boolean; error?: string }) => !r.success).length;
+      
+      if (failedCount > 0) {
+        console.error(`Failed to delete ${failedCount} photo(s):`, 
+          results.filter(r => !r.success).map(r => r.error));
+        toast.error(`Failed to delete ${failedCount} photo${failedCount > 1 ? 's' : ''}`);
+      } else {
+        console.log(`Successfully deleted ${selectedPhotos.size} photo(s)`);
+        toast.success(`Successfully deleted ${selectedPhotos.size} photo${selectedPhotos.size > 1 ? 's' : ''}`);
+        
+        // Update local state immediately
+        console.log('Updating local state to remove deleted photos');
+        setPhotos(currentPhotos => 
+          currentPhotos.filter(photo => !selectedPhotos.has(photo.id))
+        );
+        
+        // Clear selection
+        console.log('Clearing photo selection');
+        setSelectedPhotos(new Set());
+      }
+    } catch (error) {
+      console.error('Error during photo deletion:', error);
+      toast.error('An error occurred while deleting photos');
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
   if (error) {
     return (
       <Alert variant="destructive">
@@ -124,6 +190,17 @@ export function AlbumPhotos({ photos: initialPhotos, isLoading, error, albumId }
         </Tabs>
 
         <div className="flex items-center gap-4">
+          {selectedPhotos.size > 0 && (
+            <Button
+              variant="destructive"
+              onClick={handleDeleteSelected}
+              disabled={isDeleting}
+            >
+              <CircleX className="mr-2 h-4 w-4" />
+              {isDeleting ? 'Deleting...' : `Delete ${selectedPhotos.size} Photo${selectedPhotos.size > 1 ? 's' : ''}`}
+            </Button>
+          )}
+
           {isWatermarking && (
             <div className="flex items-center gap-2">
               <Progress value={progress} className="w-[100px]" />
@@ -158,7 +235,11 @@ export function AlbumPhotos({ photos: initialPhotos, isLoading, error, albumId }
             photos
               .filter(photo => photo.storage_path_watermarked)
               .map((photo) => (
-                <div key={photo.id} className="relative aspect-square rounded-sm overflow-hidden">
+                <div 
+                  key={photo.id} 
+                  className="relative aspect-square rounded-sm overflow-hidden group cursor-pointer"
+                  onClick={() => handlePhotoSelect(photo.id)}
+                >
                   {!loadedImages.has(photo.id) && (
                     <Skeleton className="absolute inset-0" />
                   )}
@@ -180,6 +261,11 @@ export function AlbumPhotos({ photos: initialPhotos, isLoading, error, albumId }
                       })
                     }}
                   />
+                  <div className={`absolute top-2 right-2 z-10 ${selectedPhotos.has(photo.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity duration-200`}>
+                    <div className={`rounded-full p-1.5 ${selectedPhotos.has(photo.id) ? 'bg-primary text-primary-foreground' : 'bg-white/20 text-white'}`}>
+                      <Check className="h-4 w-4" />
+                    </div>
+                  </div>
                 </div>
               ))
           ) : (
@@ -193,7 +279,11 @@ export function AlbumPhotos({ photos: initialPhotos, isLoading, error, albumId }
           )
         ) : (
           photos.map((photo) => (
-            <div key={photo.id} className="relative aspect-square rounded-sm overflow-hidden">
+            <div 
+              key={photo.id} 
+              className="relative aspect-square rounded-sm overflow-hidden group cursor-pointer"
+              onClick={() => handlePhotoSelect(photo.id)}
+            >
               {!loadedImages.has(photo.id) && (
                 <Skeleton className="absolute inset-0" />
               )}
@@ -215,6 +305,11 @@ export function AlbumPhotos({ photos: initialPhotos, isLoading, error, albumId }
                   })
                 }}
               />
+              <div className={`absolute top-2 right-2 z-10 ${selectedPhotos.has(photo.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity duration-200`}>
+                <div className={`rounded-full p-1.5 ${selectedPhotos.has(photo.id) ? 'bg-primary text-primary-foreground' : 'bg-white/20 text-white'}`}>
+                  <Check className="h-4 w-4" />
+                </div>
+              </div>
             </div>
           ))
         )}

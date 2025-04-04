@@ -17,13 +17,18 @@ import { Label } from "@/components/ui/label"
 import { Album } from "@/types/database"
 import { toast } from "sonner"
 import { supabase } from "@/lib/supabase/client"
+import { Textarea } from "@/components/ui/textarea"
+import { useRouter } from "next/navigation"
 
 interface AlbumSettingsDialogProps {
     album: Album
 }
 
 export function AlbumSettingsDialog({ album }: AlbumSettingsDialogProps) {
+    const router = useRouter()
     const [open, setOpen] = useState(false)
+    const [name, setName] = useState(album.name)
+    const [description, setDescription] = useState(album.description || '')
     const [watermarkText, setWatermarkText] = useState(album.watermark_text)
     const [isLoading, setIsLoading] = useState(false)
 
@@ -34,15 +39,41 @@ export function AlbumSettingsDialog({ album }: AlbumSettingsDialogProps) {
         try {
             const { error } = await supabase
                 .from('albums')
-                .update({ watermark_text: watermarkText })
+                .update({ 
+                    name,
+                    description: description || null,
+                    watermark_text: watermarkText 
+                })
                 .eq('id', album.id)
 
             if (error) throw error
 
             toast.success("Album settings updated successfully")
             setOpen(false)
+            router.refresh()
         } catch (error) {
             toast.error("Failed to update album settings")
+            console.error(error)
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const handleArchive = async () => {
+        setIsLoading(true)
+        try {
+            const { error } = await supabase
+                .from('albums')
+                .update({ status: 'archived' })
+                .eq('id', album.id)
+
+            if (error) throw error
+
+            toast.success("Album archived successfully")
+            setOpen(false)
+            router.refresh()
+        } catch (error) {
+            toast.error("Failed to archive album")
             console.error(error)
         } finally {
             setIsLoading(false)
@@ -62,28 +93,59 @@ export function AlbumSettingsDialog({ album }: AlbumSettingsDialogProps) {
                     <DialogHeader>
                         <DialogTitle>Album Settings</DialogTitle>
                         <DialogDescription>
-                            Configure settings for your album.
+                            Update your album settings and preferences.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
-                            <Label htmlFor="watermark_text">Watermark Text</Label>
+                            <Label htmlFor="name">Name</Label>
                             <Input
-                                id="watermark_text"
+                                id="name"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="Enter album name"
+                                required
+                                disabled={isLoading}
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="description">Description</Label>
+                            <Textarea
+                                id="description"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                placeholder="Enter album description"
+                                disabled={isLoading}
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="watermark">Watermark Text</Label>
+                            <Input
+                                id="watermark"
                                 value={watermarkText}
                                 onChange={(e) => setWatermarkText(e.target.value)}
                                 placeholder="Enter watermark text"
                                 disabled={isLoading}
                             />
-                            <p className="text-sm text-muted-foreground">
-                                This text will be used as a watermark on all photos in this album.
-                            </p>
                         </div>
                     </div>
-                    <DialogFooter>
-                        <Button type="submit" disabled={isLoading}>
-                            {isLoading ? "Saving..." : "Save Changes"}
+                    <DialogFooter className="flex justify-between">
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={handleArchive}
+                            disabled={isLoading || album.status === 'archived'}
+                        >
+                            Archive Album
                         </Button>
+                        <div className="flex gap-2">
+                            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button type="submit" disabled={isLoading}>
+                                Save Changes
+                            </Button>
+                        </div>
                     </DialogFooter>
                 </form>
             </DialogContent>
