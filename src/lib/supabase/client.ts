@@ -1,7 +1,21 @@
 // src/lib/supabase/client.ts
-import {createBrowserClient} from '@supabase/ssr';
+import { createBrowserClient } from '@supabase/ssr';
 
-// Define a function to create the client instance (allows for potential flexibility later)
+// Add type declaration for Clerk
+declare global {
+    interface Window {
+        Clerk?: {
+            session?: {
+                getToken: (options: { template: string }) => Promise<string | null>;
+            };
+            user?: {
+                id: string;
+            };
+        };
+    }
+}
+
+// Define a function to create the client instance
 function createClient() {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -14,13 +28,25 @@ function createClient() {
 
     return createBrowserClient(
         supabaseUrl,
-        supabaseAnonKey
+        supabaseAnonKey,
+        {
+            auth: {
+                persistSession: false,
+                autoRefreshToken: false,
+                detectSessionInUrl: false
+            },
+            global: {
+                headers: {
+                    // The new approach uses a simpler header structure
+                    'x-clerk-user-id': window.Clerk?.user?.id || '',
+                }
+            }
+        }
     );
 }
 
 // Export a singleton instance for easy use in client components
 export const supabase = createClient();
 
-// Type helper for Supabase client type (optional, but good practice)
-// You might generate more specific types later using `supabase gen types typescript`
+// Type helper for Supabase client type
 export type SupabaseClient = typeof supabase;

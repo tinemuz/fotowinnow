@@ -17,6 +17,9 @@ export async function createSupabaseServerClient(cookieStore: ReadonlyRequestCoo
         );
     }
 
+    // Get the Clerk user ID
+    const { userId } = await auth();
+
     return createServerClient(
         supabaseUrl,
         supabaseAnonKey,
@@ -52,6 +55,12 @@ export async function createSupabaseServerClient(cookieStore: ReadonlyRequestCoo
                 sameSite: 'lax',
                 path: '/',
                 secure: process.env.NODE_ENV === 'production'
+            },
+            global: {
+                headers: {
+                    // The new approach uses a simpler header structure
+                    'x-clerk-user-id': userId || '',
+                }
             }
         }
     );
@@ -61,19 +70,8 @@ export async function createSupabaseServerClient(cookieStore: ReadonlyRequestCoo
 // where you might need to write cookies back.
 // Often, createSupabaseServerClient can be used for these too, but this provides a clear separation.
 export async function createSupabaseServerActionClient() {
-    const cookieStore = await cookies();
-    const { sessionId } = await auth();
-
-    const client = await createSupabaseServerClient(cookieStore as unknown as ReadonlyRequestCookies);
-
-    if (sessionId) {
-        await client.auth.setSession({
-            access_token: sessionId,
-            refresh_token: sessionId
-        });
-    }
-
-    return client;
+    const cookieStore = cookies();
+    return createSupabaseServerClient(cookieStore as unknown as ReadonlyRequestCookies);
 }
 
 // Function to create a Supabase Admin client using the SERVICE_ROLE_KEY
