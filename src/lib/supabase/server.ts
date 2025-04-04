@@ -70,8 +70,8 @@ export async function createSupabaseServerClient(cookieStore: ReadonlyRequestCoo
 // where you might need to write cookies back.
 // Often, createSupabaseServerClient can be used for these too, but this provides a clear separation.
 export async function createSupabaseServerActionClient() {
-    const cookieStore = cookies();
-    return createSupabaseServerClient(cookieStore as unknown as ReadonlyRequestCookies);
+    const cookieStore = await cookies();
+    return await createSupabaseServerClient(cookieStore as unknown as ReadonlyRequestCookies);
 }
 
 // Function to create a Supabase Admin client using the SERVICE_ROLE_KEY

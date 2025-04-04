@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSignedUrls } from '@/lib/actions/photos';
 
-export async function GET(
-    request: NextRequest,
-    { params }: { params: Promise<{ path: string }> }
-): Promise<Response> {
+export async function GET(request: NextRequest, props: { params: Promise<{ path: string }> }): Promise<Response> {
+    const params = await props.params;
     try {
-        const resolvedParams = await params;
-        const storagePath = decodeURIComponent(resolvedParams.path);
+        const storagePath = decodeURIComponent(params.path);
         const signedUrls = await getSignedUrls([storagePath]);
 
         if (!signedUrls?.[storagePath]) {

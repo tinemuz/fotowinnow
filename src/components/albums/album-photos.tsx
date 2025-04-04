@@ -58,6 +58,7 @@ export function AlbumPhotos({ photos, isLoading, error }: AlbumPhotosProps) {
                 className="object-cover transition-transform group-hover:scale-105"
                 sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 priority={false}
+                unoptimized
               />
             </div>
           </CardContent>
