@@ -1,11 +1,11 @@
 "use client"
 
 import { Photo } from "@/lib/actions/photos"
-import { Card, CardContent } from "@/components/ui/card"
 import Image from "next/image"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { IconAlertCircle } from "@tabler/icons-react"
+import { useState } from "react"
 
 interface AlbumPhotosProps {
   photos: Photo[]
@@ -14,6 +14,16 @@ interface AlbumPhotosProps {
 }
 
 export function AlbumPhotos({ photos, isLoading, error }: AlbumPhotosProps) {
+  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set())
+
+  const handleImageLoad = (photoId: string) => {
+    setLoadedImages(prev => {
+      const newSet = new Set(prev)
+      newSet.add(photoId)
+      return newSet
+    })
+  }
+
   if (error) {
     return (
       <Alert variant="destructive">
@@ -27,11 +37,9 @@ export function AlbumPhotos({ photos, isLoading, error }: AlbumPhotosProps) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {[...Array(8)].map((_, i) => (
-          <Card key={i} className="overflow-hidden">
-            <CardContent className="p-0">
-              <Skeleton className="aspect-square w-full" />
-            </CardContent>
-          </Card>
+          <div key={i} className="relative aspect-square rounded-sm overflow-hidden">
+            <Skeleton className="absolute inset-0" />
+          </div>
         ))}
       </div>
     )
@@ -48,21 +56,21 @@ export function AlbumPhotos({ photos, isLoading, error }: AlbumPhotosProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {photos.map((photo) => (
-        <Card key={photo.id} className="overflow-hidden group">
-          <CardContent className="p-0">
-            <div className="relative aspect-square">
-              <Image
-                src={`/api/photos/${encodeURIComponent(photo.storage_path_original)}`}
-                alt={photo.filename_original}
-                fill
-                className="object-cover transition-transform group-hover:scale-105"
-                sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                priority={false}
-                unoptimized
-              />
-            </div>
-          </CardContent>
-        </Card>
+        <div key={photo.id} className="relative aspect-square rounded-sm overflow-hidden">
+          {!loadedImages.has(photo.id) && (
+            <Skeleton className="absolute inset-0" />
+          )}
+          <Image
+            src={`/api/photos/${encodeURIComponent(photo.storage_path_original)}`}
+            alt={photo.filename_original}
+            fill
+            className="object-cover"
+            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            priority={false}
+            unoptimized
+            onLoadingComplete={() => handleImageLoad(photo.id)}
+          />
+        </div>
       ))}
     </div>
   )

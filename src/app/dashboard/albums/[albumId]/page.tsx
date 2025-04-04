@@ -5,6 +5,7 @@ import { UploadPhotoDialog } from "@/components/albums/upload-photo-dialog"
 import { notFound } from "next/navigation"
 import { Metadata } from "next"
 import { Suspense } from "react"
+import { Badge } from "@/components/ui/badge"
 
 interface AlbumPageProps {
   params: Promise<{
@@ -37,7 +38,12 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
     <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">{album.name}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-semibold">{album.name}</h1>
+            <Badge variant={album.status === 'published' ? 'default' : album.status === 'draft' ? 'secondary' : 'outline'}>
+              {album.status.charAt(0).toUpperCase() + album.status.slice(1)}
+            </Badge>
+          </div>
           {album.description && (
             <p className="text-muted-foreground mt-1">{album.description}</p>
           )}
