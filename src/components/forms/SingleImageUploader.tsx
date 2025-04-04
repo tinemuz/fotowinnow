@@ -1,10 +1,10 @@
 "use client";
 
 import React from "react";
-import { Download } from "lucide-react";
-import { useImageProcessing } from "@/hooks/useImageProcessing";
-import { QualityOption } from "@/lib/constants";
-import { SignedIn, SignedOut } from "@clerk/nextjs";
+import {Download} from "lucide-react";
+import {useImageProcessing} from "@/hooks/useImageProcessing";
+import {QualityOption} from "@/lib/constants";
+import {SignedIn, SignedOut} from "@clerk/nextjs";
 
 const SingleImageUploader = () => {
     const {

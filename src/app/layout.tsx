@@ -1,5 +1,5 @@
 import "./globals.css";
-import {ClerkProvider, SignedIn, SignedOut, SignInButton, SignUpButton, UserButton,} from '@clerk/nextjs'
+import {ClerkProvider, SignedOut, SignInButton, SignUpButton,} from '@clerk/nextjs'
 import {type Metadata} from "next";
 import {Inter} from "next/font/google";
 
@@ -19,17 +19,15 @@ export default function RootLayout({
                                    }: Readonly<{ children: React.ReactNode }>) {
     return (
         <ClerkProvider>
-            <html lang="en" >
+            <html lang="en">
             <body className={`${inter.variable}`}>
-            <header className="flex justify-end items-center p-4 gap-4 mt-14">
-                <SignedOut>
+            <SignedOut>
+                <header className="flex justify-end items-center p-4 gap-4 mt-14">
                     <SignInButton/>
                     <SignUpButton/>
-                </SignedOut>
-                <SignedIn>
-                    <UserButton/>
-                </SignedIn>
-            </header>
+                </header>
+            </SignedOut>
+
             {children}
 
             </body>

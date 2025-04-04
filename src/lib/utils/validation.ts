@@ -1,5 +1,5 @@
-import { z } from "zod";
-import { QUALITY_OPTIONS, MAX_WATERMARK_LENGTH } from "../constants";
+import {z} from "zod";
+import {MAX_WATERMARK_LENGTH, QUALITY_OPTIONS} from "../constants";
 
 export const watermarkInputSchema = z.object({
     fileBase64: z.string(),
