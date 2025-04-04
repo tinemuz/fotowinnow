@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { Album } from '@/types/database';
 import { addWatermark } from '../actions/watermark';
+import { Photo } from './photos';
 
 const createAlbumSchema = z.object({
     name: z.string().min(1, 'Album name is required'),
@@ -47,7 +48,7 @@ export async function getAlbums(): Promise<Album[]> {
     const processedAlbums = albums?.map(album => {
         const photos = album.photos || [];
         const mostRecentUpload = photos.length > 0
-            ? Math.max(...photos.map(photo => new Date(photo.uploaded_at).getTime()))
+            ? Math.max(...photos.map((photo: Photo) => new Date(photo.uploaded_at).getTime()))
             : new Date(album.created_at).getTime();
 
         return {
