@@ -7,6 +7,7 @@ import { createSupabaseAdminClient } from '@/lib/supabase/server'; // Adjust pat
 
 export async function POST(req: Request) {
     console.log('🔔 Webhook received - Starting processing');
+    console.log('📍 Request URL:', req.url);
 
     // You can find this in the Clerk Dashboard -> Webhooks -> choose the webhook
     const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
@@ -102,6 +103,23 @@ export async function POST(req: Request) {
         try {
             console.log('🔌 Creating Supabase admin client');
             const supabaseAdmin = createSupabaseAdminClient();
+
+            // Verify Supabase connection
+            const { data: testData, error: testError } = await supabaseAdmin
+                .from('profiles')
+                .select('count')
+                .limit(1);
+
+            if (testError) {
+                console.error('❌ Supabase connection test failed:', {
+                    error: testError,
+                    message: testError.message,
+                    details: testError.details,
+                    hint: testError.hint
+                });
+                return NextResponse.json({ success: false, error: 'Database connection failed' }, { status: 500 });
+            }
+            console.log('✅ Supabase connection test successful');
 
             console.log('💾 Attempting to insert user into profiles table');
             // Insert data into your 'profiles' table
