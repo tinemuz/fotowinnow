@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: AlbumPageProps): Promise<Meta
 
 async function AlbumContent({ albumId }: { albumId: string }) {
   const photos = await getPhotos(albumId)
-  return <AlbumPhotos photos={photos} />
+  return <AlbumPhotos photos={photos} albumId={albumId} />
 }
 
 export default async function AlbumPage({ params }: AlbumPageProps) {

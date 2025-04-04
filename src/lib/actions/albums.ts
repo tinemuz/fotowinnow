@@ -1,10 +1,11 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
-import { createSupabaseServerActionClient, createSupabaseAdminClient } from '../supabase/server';
+import { createSupabaseServerActionClient, createSupabaseAdminClient, getAuthenticatedProfileId } from '../supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { Album } from '@/types/database';
+import { addWatermark } from '../actions/watermark';
 
 const createAlbumSchema = z.object({
     name: z.string().min(1, 'Album name is required'),
@@ -12,55 +13,6 @@ const createAlbumSchema = z.object({
     client_greeting: z.string().optional(),
     watermark_text: z.string().optional(),
 });
-
-async function getAuthenticatedProfileId() {
-    const { userId } = await auth();
-    console.log('Authentication attempt - Clerk User ID:', userId);
-
-    if (!userId) {
-        console.error('Authentication failed - No Clerk user ID found');
-        throw new Error('User not authenticated');
-    }
-
-    // Use the admin client since we're just querying the profiles table
-    const supabase = createSupabaseAdminClient();
-    console.log('Supabase admin client created, querying profiles table for user:', userId);
-
-    const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('clerk_user_id', userId)
-        .single();
-
-    if (profileError) {
-        console.error('Profile query error:', {
-            error: profileError,
-            clerkUserId: userId,
-            query: 'profiles.select(id).eq(clerk_user_id, userId).single()',
-            errorDetails: {
-                code: profileError.code,
-                message: profileError.message,
-                details: profileError.details,
-                hint: profileError.hint
-            }
-        });
-        throw new Error(`Profile not found for Clerk user ID: ${userId}`);
-    }
-
-    if (!profile) {
-        console.error('No profile found for user:', {
-            clerkUserId: userId,
-            query: 'profiles.select(id).eq(clerk_user_id, userId).single()'
-        });
-        throw new Error(`Profile not found for Clerk user ID: ${userId}`);
-    }
-
-    console.log('Successfully retrieved profile ID:', {
-        profileId: profile.id,
-        clerkUserId: userId
-    });
-    return profile.id;
-}
 
 export async function getAlbums(): Promise<Album[]> {
     console.log('Starting getAlbums process');
@@ -234,6 +186,208 @@ export async function createAlbum(formData: FormData): Promise<CreateAlbumResult
         return {
             success: false,
             error: 'An unexpected error occurred while creating the album',
+        };
+    }
+}
+
+export async function applyAlbumWatermark(albumId: string): Promise<{
+    success: boolean;
+    error?: string;
+    processed?: number;
+    errors?: number;
+}> {
+    console.log('Starting applyAlbumWatermark process');
+    const profileId = await getAuthenticatedProfileId();
+    console.log('Retrieved profile ID:', profileId);
+
+    const supabase = await createSupabaseServerActionClient();
+    console.log('Supabase client created');
+
+    // Get album details including watermark text
+    const { data: album, error: albumError } = await supabase
+        .from('albums')
+        .select('*')
+        .eq('id', albumId)
+        .eq('owner_id', profileId)
+        .single();
+
+    if (albumError || !album) {
+        console.error('Error fetching album:', {
+            error: albumError,
+            albumId,
+            profileId
+        });
+        return {
+            success: false,
+            error: 'Album not found or access denied'
+        };
+    }
+
+    // Get all unwatermarked photos for this album
+    const { data: photos, error: photosError } = await supabase
+        .from('photos')
+        .select('*')
+        .eq('album_id', albumId)
+        .is('storage_path_watermarked', null);
+
+    if (photosError) {
+        console.error('Error fetching photos:', {
+            error: photosError,
+            albumId
+        });
+        return {
+            success: false,
+            error: 'Failed to fetch photos'
+        };
+    }
+
+    if (!photos || photos.length === 0) {
+        return {
+            success: true,
+            error: 'No photos need watermarking'
+        };
+    }
+
+    try {
+        // Process photos in batches to avoid timeout
+        const batchSize = 5;
+        const batches = [];
+        for (let i = 0; i < photos.length; i += batchSize) {
+            batches.push(photos.slice(i, i + batchSize));
+        }
+
+        let totalProcessed = 0;
+        let totalErrors = 0;
+        const watermarkText = album.watermark_text || 'fotowinnow';
+
+        for (const batch of photos) {
+            try {
+                console.log(`Processing photo ${totalProcessed + 1}/${photos.length}: ${batch.id}`);
+
+                // Get the original image from storage
+                const { data: imageData, error: imageError } = await supabase
+                    .storage
+                    .from('photos')
+                    .download(batch.storage_path_original);
+
+                if (imageError) {
+                    console.error(`Error downloading image for photo ${batch.id}:`, imageError);
+                    totalErrors++;
+                    continue;
+                }
+
+                // Convert to base64
+                const arrayBuffer = await imageData.arrayBuffer();
+                const buffer = Buffer.from(arrayBuffer);
+                const base64String = buffer.toString('base64');
+
+                // Create FormData for watermark function
+                const formData = new FormData();
+                formData.append('fileBase64', base64String);
+                formData.append('quality', '1080p'); // Default quality
+                formData.append('watermark', watermarkText);
+                formData.append('fontName', 'Space Mono'); // Default font
+
+                console.log('Applying watermark to photo:', {
+                    photoId: batch.id,
+                    watermarkText: watermarkText
+                });
+
+                // Apply watermark using the existing function
+                const watermarkResult = await addWatermark(formData);
+
+                if (!watermarkResult.success || !watermarkResult.result) {
+                    console.error('Watermark failed for photo:', {
+                        photoId: batch.id,
+                        error: watermarkResult.error
+                    });
+                    totalErrors++;
+                    continue;
+                }
+
+                console.log('Successfully applied watermark to photo:', {
+                    photoId: batch.id,
+                    resultSize: watermarkResult.result.length
+                });
+
+                // Convert base64 result back to buffer
+                const watermarkedBuffer = Buffer.from(watermarkResult.result, 'base64');
+
+                // Generate watermarked path
+                const watermarkedPath = batch.storage_path_original.replace(
+                    /\.(jpg|jpeg|png|webp)$/i,
+                    '_watermarked.$1'
+                );
+
+                console.log('Uploading watermarked image:', {
+                    photoId: batch.id,
+                    watermarkedPath
+                });
+
+                // Upload watermarked image
+                const { error: uploadError } = await supabase
+                    .storage
+                    .from('photos')
+                    .upload(watermarkedPath, watermarkedBuffer, {
+                        contentType: imageData.type,
+                        upsert: true
+                    });
+
+                if (uploadError) {
+                    console.error('Error uploading watermarked image:', {
+                        photoId: batch.id,
+                        error: uploadError
+                    });
+                    totalErrors++;
+                    continue;
+                }
+
+                // Update photo record with watermarked path
+                const { error: updateError } = await supabase
+                    .from('photos')
+                    .update({
+                        storage_path_watermarked: watermarkedPath
+                    })
+                    .eq('id', batch.id);
+
+                if (updateError) {
+                    console.error('Error updating photo record:', {
+                        photoId: batch.id,
+                        error: updateError
+                    });
+                    totalErrors++;
+                    continue;
+                }
+
+                totalProcessed++;
+            } catch (photoError) {
+                console.error(`Error processing photo ${batch.id}:`, {
+                    error: photoError,
+                    errorMessage: photoError instanceof Error ? photoError.message : 'Unknown error',
+                    stack: photoError instanceof Error ? photoError.stack : undefined
+                });
+                totalErrors++;
+            }
+        }
+
+        // Revalidate the album page to refresh the UI
+        revalidatePath(`/dashboard/albums/${albumId}`);
+        console.log('Cache revalidated for album page');
+
+        return {
+            success: true,
+            processed: totalProcessed,
+            errors: totalErrors
+        };
+    } catch (error) {
+        console.error('Exception during watermark process:', {
+            error,
+            errorMessage: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined
+        });
+        return {
+            success: false,
+            error: 'Exception during watermark process'
         };
     }
 }

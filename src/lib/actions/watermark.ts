@@ -6,6 +6,7 @@ import { Cutive_Mono, IBM_Plex_Mono, JetBrains_Mono, Roboto_Mono, Source_Code_Pr
 import { watermarkInputSchema } from "@/lib/utils/validation";
 import { WatermarkResult } from "@/types/image";
 import { auth } from "@clerk/nextjs/server";
+import { getAuthenticatedProfileId } from "@/lib/supabase/server";
 
 // Configure font paths
 path.resolve(process.cwd(), 'fonts', 'fonts.conf');
@@ -43,10 +44,11 @@ const fontFamilyMap = {
 
 export async function addWatermark(formData: FormData): Promise<WatermarkResult> {
     console.log('Starting watermark process');
-    const { userId } = await auth();
-    console.log('Authentication check - User ID:', userId);
 
-    if (!userId) {
+    // Use the cached function to get the profile ID
+    try {
+        await getAuthenticatedProfileId();
+    } catch (error) {
         console.error('Watermark process failed - User not authenticated');
         return { success: false, error: "Authentication required" };
     }
@@ -62,7 +64,8 @@ export async function addWatermark(formData: FormData): Promise<WatermarkResult>
             quality,
             watermarkLength: watermark?.length,
             fontName,
-            fileSize: fileBase64?.length
+            fileSize: fileBase64?.length,
+            fileType: fileBase64?.split(';')[0]?.split(':')[1]
         });
 
         // Validate using zod
@@ -75,6 +78,11 @@ export async function addWatermark(formData: FormData): Promise<WatermarkResult>
         console.log('Input validation successful');
 
         const fileBuffer = Buffer.from(input.fileBase64, 'base64');
+        console.log('Created file buffer:', {
+            bufferSize: fileBuffer.length,
+            expectedSize: Math.ceil(input.fileBase64.length * 0.75) // Base64 to binary size ratio
+        });
+
         const image = sharp(fileBuffer, {
             failOnError: false,
         });
@@ -83,7 +91,14 @@ export async function addWatermark(formData: FormData): Promise<WatermarkResult>
         console.log('Image metadata:', {
             width: metadata.width,
             height: metadata.height,
-            format: metadata.format
+            format: metadata.format,
+            space: metadata.space,
+            channels: metadata.channels,
+            depth: metadata.depth,
+            density: metadata.density,
+            isProgressive: metadata.isProgressive,
+            hasAlpha: metadata.hasAlpha,
+            orientation: metadata.orientation
         });
 
         const width = metadata.width ?? 0;
@@ -116,6 +131,12 @@ export async function addWatermark(formData: FormData): Promise<WatermarkResult>
             ? [Math.round(targetSize * aspectRatio), targetSize]
             : [targetSize, Math.round(targetSize / aspectRatio)];
 
+        console.log('Calculated dimensions:', {
+            aspectRatio,
+            newWidth,
+            newHeight
+        });
+
         const baseCharWidth = 14; // Base character width for 512p
         const charWidth = Math.round(baseCharWidth * scaleFactor);
         const watermarkWidth = input.watermark.length * charWidth;
@@ -129,6 +150,18 @@ export async function addWatermark(formData: FormData): Promise<WatermarkResult>
         const diagonalLength = Math.ceil(Math.sqrt(newWidth * newWidth + newHeight * newHeight));
         const numCols = Math.ceil(diagonalLength / totalHorizontalSpace) + 2;
         const numRows = Math.ceil(diagonalLength / totalVerticalSpace) + 2;
+
+        console.log('Watermark pattern calculations:', {
+            charWidth,
+            watermarkWidth,
+            horizontalSpacing,
+            verticalSpacing,
+            totalHorizontalSpace,
+            totalVerticalSpace,
+            diagonalLength,
+            numCols,
+            numRows
+        });
 
         const fontFamily = fontFamilyMap[input.fontName as keyof typeof fontFamilyMap] ?? fontFamilyMap['Space Mono'];
 
@@ -149,6 +182,11 @@ export async function addWatermark(formData: FormData): Promise<WatermarkResult>
             </svg>
         `;
 
+        console.log('Generated SVG watermark:', {
+            svgLength: svgContent.length,
+            numWatermarks: numRows * numCols
+        });
+
         const result = await image
             .resize(newWidth, newHeight, { fit: "fill" })
             .composite([{
@@ -160,13 +198,18 @@ export async function addWatermark(formData: FormData): Promise<WatermarkResult>
             .png({ compressionLevel: 6 })
             .toBuffer();
 
-        console.log('Watermark process completed successfully');
+        console.log('Watermark process completed successfully:', {
+            resultSize: result.length,
+            compressionRatio: (result.length / fileBuffer.length * 100).toFixed(2) + '%'
+        });
+
         return { success: true, result: result.toString('base64') };
     } catch (error) {
         console.error("Error processing image:", {
             error,
             errorMessage: error instanceof Error ? error.message : 'Unknown error',
-            stack: error instanceof Error ? error.stack : undefined
+            stack: error instanceof Error ? error.stack : undefined,
+            errorType: error?.constructor?.name
         });
         return { success: false, error: "Error processing image" };
     }

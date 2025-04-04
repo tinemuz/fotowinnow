@@ -5,6 +5,52 @@ import { cookies } from 'next/headers';
 import { type ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension/adapters/request-cookies';
 import { auth } from '@clerk/nextjs/server';
 
+// Cache for profile IDs to reduce database queries
+const profileIdCache = new Map<string, string>();
+
+// Function to get the authenticated profile ID with caching
+export async function getAuthenticatedProfileId(): Promise<string> {
+    const { userId } = await auth();
+
+    if (!userId) {
+        throw new Error('User not authenticated');
+    }
+
+    // Check if profile ID is in cache
+    if (profileIdCache.has(userId)) {
+        return profileIdCache.get(userId)!;
+    }
+
+    // If not in cache, query the database
+    const supabase = createSupabaseAdminClient();
+
+    const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('clerk_user_id', userId)
+        .single();
+
+    if (profileError) {
+        console.error('Profile query error:', {
+            error: profileError,
+            clerkUserId: userId,
+            query: 'profiles.select(id).eq(clerk_user_id, userId).single()',
+            errorDetails: {
+                code: profileError.code,
+                message: profileError.message,
+                details: profileError.details,
+                hint: profileError.hint
+            }
+        });
+        throw new Error(`Profile not found for Clerk user ID: ${userId}`);
+    }
+
+    // Store in cache for future use
+    profileIdCache.set(userId, profile.id);
+
+    return profile.id;
+}
+
 // Function to create Supabase client for Server Components, Server Actions, Route Handlers
 // It reads/writes cookies to manage the user's session server-side.
 export async function createSupabaseServerClient(cookieStore: ReadonlyRequestCookies) {
@@ -12,6 +58,10 @@ export async function createSupabaseServerClient(cookieStore: ReadonlyRequestCoo
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseAnonKey) {
+        console.error('Missing Supabase credentials:', {
+            hasUrl: !!supabaseUrl,
+            hasAnonKey: !!supabaseAnonKey
+        });
         throw new Error(
             "Supabase URL or Anon Key is missing from environment variables. Make sure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set."
         );
@@ -20,7 +70,7 @@ export async function createSupabaseServerClient(cookieStore: ReadonlyRequestCoo
     // Get the Clerk user ID
     const { userId } = await auth();
 
-    return createServerClient(
+    const client = createServerClient(
         supabaseUrl,
         supabaseAnonKey,
         {
@@ -43,7 +93,12 @@ export async function createSupabaseServerClient(cookieStore: ReadonlyRequestCoo
                                 secure: process.env.NODE_ENV === 'production'
                             });
                         }
-                    } catch {
+                    } catch (error) {
+                        console.error('Error setting cookies for Supabase client:', {
+                            error,
+                            errorMessage: error instanceof Error ? error.message : 'Unknown error',
+                            stack: error instanceof Error ? error.stack : undefined
+                        });
                         // The `setAll` method was called from a Server Component.
                         // This can be ignored if you have middleware refreshing
                         // user sessions.
@@ -64,14 +119,26 @@ export async function createSupabaseServerClient(cookieStore: ReadonlyRequestCoo
             }
         }
     );
+
+    return client;
 }
 
 // Function to create Supabase client specifically for Server Actions or Route Handlers
 // where you might need to write cookies back.
 // Often, createSupabaseServerClient can be used for these too, but this provides a clear separation.
 export async function createSupabaseServerActionClient() {
-    const cookieStore = await cookies();
-    return await createSupabaseServerClient(cookieStore as unknown as ReadonlyRequestCookies);
+    try {
+        const cookieStore = await cookies();
+        const client = await createSupabaseServerClient(cookieStore as unknown as ReadonlyRequestCookies);
+        return client;
+    } catch (error) {
+        console.error('Error creating Supabase server action client:', {
+            error,
+            errorMessage: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined
+        });
+        throw error;
+    }
 }
 
 // Function to create a Supabase Admin client using the SERVICE_ROLE_KEY
@@ -82,15 +149,21 @@ export function createSupabaseAdminClient() {
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !supabaseServiceKey) {
+        console.error('Missing Supabase admin credentials:', {
+            hasUrl: !!supabaseUrl,
+            hasServiceKey: !!supabaseServiceKey
+        });
         throw new Error(
             "Supabase URL or Service Role Key is missing from environment variables. Make sure NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set."
         );
     }
 
-    return createClient(supabaseUrl, supabaseServiceKey, {
+    const client = createClient(supabaseUrl, supabaseServiceKey, {
         auth: {
             autoRefreshToken: false,
             persistSession: false
         }
     });
+
+    return client;
 }

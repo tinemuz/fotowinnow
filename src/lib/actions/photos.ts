@@ -1,7 +1,7 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
-import { createSupabaseServerActionClient, createSupabaseAdminClient } from '../supabase/server';
+import { createSupabaseServerActionClient, createSupabaseAdminClient, getAuthenticatedProfileId } from '../supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
@@ -11,6 +11,7 @@ export interface Photo {
     album_id: string;
     uploader_id: string;
     storage_path_original: string;
+    storage_path_watermarked: string | null;
     filename_original: string;
     mime_type: string | null;
     size_bytes: number | null;
@@ -31,51 +32,6 @@ const fileSchema = z.object({
     ),
     size: z.number().max(10 * 1024 * 1024, 'File size must be less than 10MB'),
 });
-
-async function getAuthenticatedProfileId() {
-    const { userId } = await auth();
-    console.log('Authentication attempt - Clerk User ID:', userId);
-
-    if (!userId) {
-        console.error('Authentication failed - No Clerk user ID found');
-        throw new Error('User not authenticated');
-    }
-
-    // Use the admin client since we're just querying the profiles table
-    const supabase = createSupabaseAdminClient();
-    console.log('Supabase admin client created, querying profiles table for user:', userId);
-
-    const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('clerk_user_id', userId)
-        .single();
-
-    if (profileError) {
-        console.error('Profile query error:', {
-            error: profileError,
-            clerkUserId: userId,
-            query: 'profiles.select(id).eq(clerk_user_id, userId).single()',
-            errorDetails: {
-                code: profileError.code,
-                message: profileError.message,
-                details: profileError.details,
-                hint: profileError.hint
-            }
-        });
-        throw new Error(`Profile not found for Clerk user ID: ${userId}`);
-    }
-
-    if (!profile) {
-        console.error('No profile found for user:', {
-            clerkUserId: userId,
-            query: 'profiles.select(id).eq(clerk_user_id, userId).single()'
-        });
-        throw new Error(`Profile not found for Clerk user ID: ${userId}`);
-    }
-
-    return profile.id;
-}
 
 export async function uploadPhoto(formData: FormData): Promise<UploadPhotoResult> {
     console.log('Starting uploadPhoto process');
@@ -389,8 +345,8 @@ export async function getSignedUrls(storagePaths: string[]): Promise<{ [key: str
         // Verify ownership of all photos
         const { data: photos, error: photosError } = await supabase
             .from('photos')
-            .select('storage_path_original, album_id')
-            .in('storage_path_original', storagePaths);
+            .select('storage_path_original, storage_path_watermarked, album_id')
+            .or(`storage_path_original.in.(${storagePaths.join(',')}),storage_path_watermarked.in.(${storagePaths.join(',')})`);
 
         if (photosError) {
             console.error('Error fetching photos:', photosError);
