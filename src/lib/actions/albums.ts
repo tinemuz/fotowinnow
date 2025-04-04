@@ -22,10 +22,15 @@ export async function getAlbums(): Promise<Album[]> {
     const supabase = await createSupabaseServerActionClient();
     console.log('Supabase client created, querying albums');
 
-    // Get the albums
+    // Get the albums with their most recent photo upload date
     const { data: albums, error: albumsError } = await supabase
         .from('albums')
-        .select('*')
+        .select(`
+            *,
+            photos:photos (
+                uploaded_at
+            )
+        `)
         .eq('owner_id', profileId)
         .order('created_at', { ascending: false });
 
@@ -38,11 +43,27 @@ export async function getAlbums(): Promise<Album[]> {
         throw new Error('Failed to fetch albums');
     }
 
+    // Process albums to get the most recent photo upload date
+    const processedAlbums = albums?.map(album => {
+        const photos = album.photos || [];
+        const mostRecentUpload = photos.length > 0
+            ? Math.max(...photos.map(photo => new Date(photo.uploaded_at).getTime()))
+            : new Date(album.created_at).getTime();
+
+        return {
+            ...album,
+            last_updated: mostRecentUpload
+        };
+    }) || [];
+
+    // Sort by most recent update
+    processedAlbums.sort((a, b) => b.last_updated - a.last_updated);
+
     console.log('Successfully retrieved albums:', {
-        count: albums?.length ?? 0,
+        count: processedAlbums.length,
         profileId
     });
-    return albums || [];
+    return processedAlbums;
 }
 
 export async function getAlbum(albumId: string): Promise<Album | null> {

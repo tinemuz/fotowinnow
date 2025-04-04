@@ -1,6 +1,8 @@
 "use client"
 
-import {Eye, type LucideIcon, MoreHorizontal, Share2, XCircle,} from "lucide-react"
+import {Eye, type LucideIcon, MoreHorizontal, Share2, XCircle, Clock} from "lucide-react"
+import { Album } from "@/types/database"
+import Link from "next/link"
 
 import {
   DropdownMenu,
@@ -22,25 +24,22 @@ import {
 export function NavRecentAlbums({
   albums,
 }: {
-  albums: {
-    name: string
-    url: string
-    icon: LucideIcon
-  }[]
+  albums: Album[]
 }) {
   const { isMobile } = useSidebar()
+  const recentAlbums = albums.slice(0, 3) // Get the 3 most recent albums
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
       <SidebarGroupLabel>Recent Albums</SidebarGroupLabel>
       <SidebarMenu>
-        {albums.map((item) => (
-          <SidebarMenuItem key={item.name}>
+        {recentAlbums.map((album) => (
+          <SidebarMenuItem key={album.id}>
             <SidebarMenuButton asChild>
-              <a href={item.url}>
-                <item.icon />
-                <span>{item.name}</span>
-              </a>
+              <Link href={`/dashboard/albums/${album.id}`}>
+                <Clock className="h-4 w-4" />
+                <span className="truncate">{album.name}</span>
+              </Link>
             </SidebarMenuButton>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -54,9 +53,11 @@ export function NavRecentAlbums({
                 side={isMobile ? "bottom" : "right"}
                 align={isMobile ? "end" : "start"}
               >
-                <DropdownMenuItem>
-                  <Eye className="text-muted-foreground" />
-                  <span>View Album</span>
+                <DropdownMenuItem asChild>
+                  <Link href={`/dashboard/albums/${album.id}`}>
+                    <Eye className="text-muted-foreground" />
+                    <span>View Album</span>
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <Share2 className="text-muted-foreground" />
@@ -72,9 +73,11 @@ export function NavRecentAlbums({
           </SidebarMenuItem>
         ))}
         <SidebarMenuItem>
-          <SidebarMenuButton className="text-sidebar-foreground/70">
-            <MoreHorizontal className="text-sidebar-foreground/70" />
-            <span>More</span>
+          <SidebarMenuButton asChild>
+            <Link href="/dashboard/albums" className="text-sidebar-foreground/70">
+              <MoreHorizontal className="text-sidebar-foreground/70" />
+              <span>More</span>
+            </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>

@@ -2,6 +2,9 @@
 
 import * as React from "react"
 import {Album, AudioWaveform, Clock, Command, GalleryVerticalEnd, LayoutDashboard, Settings2,} from "lucide-react"
+import { useEffect, useState } from "react"
+import { Album as AlbumType } from "@/types/database"
+import { getAlbums } from "@/lib/actions/albums"
 
 import {NavMain} from "@/components/nav-main"
 import {NavRecentAlbums} from "@/components/nav-recent-albums"
@@ -51,26 +54,24 @@ const data = {
       icon: Settings2,
     },
   ],
-  recentAlbums: [
-    {
-      name: "Wedding Shoot - June '24",
-      url: "/dashboard/albums/wedding-june-24",
-      icon: Clock,
-    },
-    {
-      name: "Product Catalog - Q2",
-      url: "/dashboard/albums/product-q2",
-      icon: Clock,
-    },
-    {
-      name: "Family Portraits - May",
-      url: "/dashboard/albums/family-may",
-      icon: Clock,
-    },
-  ],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const [albums, setAlbums] = useState<AlbumType[]>([])
+
+  useEffect(() => {
+    const fetchAlbums = async () => {
+      try {
+        const fetchedAlbums = await getAlbums()
+        setAlbums(fetchedAlbums)
+      } catch (error) {
+        console.error('Failed to fetch albums:', error)
+      }
+    }
+
+    fetchAlbums()
+  }, [])
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -78,7 +79,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavRecentAlbums albums={data.recentAlbums} />
+        <NavRecentAlbums albums={albums} />
         <SignedIn>
           <UserButton/>
         </SignedIn>
