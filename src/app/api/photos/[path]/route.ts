@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSignedUrls } from '@/lib/actions/photos';
 
-// Define the params type
-type Params = {
-    path: string;
-};
-
 export async function GET(
     request: NextRequest,
-    context: { params: Params }
+    { params }: { params: Promise<{ path: string }> }
 ): Promise<Response> {
     try {
-        const storagePath = decodeURIComponent(context.params.path);
+        const resolvedParams = await params;
+        const storagePath = decodeURIComponent(resolvedParams.path);
         const signedUrls = await getSignedUrls([storagePath]);
 
         if (!signedUrls?.[storagePath]) {

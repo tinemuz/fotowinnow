@@ -7,13 +7,14 @@ import { Metadata } from "next"
 import { Suspense } from "react"
 
 interface AlbumPageProps {
-  params: {
+  params: Promise<{
     albumId: string
-  }
+  }>
 }
 
 export async function generateMetadata({ params }: AlbumPageProps): Promise<Metadata> {
-  const album = await getAlbum(params.albumId)
+  const resolvedParams = await params;
+  const album = await getAlbum(resolvedParams.albumId)
   return {
     title: album?.name || "Album",
   }
@@ -25,7 +26,8 @@ async function AlbumContent({ albumId }: { albumId: string }) {
 }
 
 export default async function AlbumPage({ params }: AlbumPageProps) {
-  const album = await getAlbum(params.albumId)
+  const resolvedParams = await params;
+  const album = await getAlbum(resolvedParams.albumId)
 
   if (!album) {
     notFound()
@@ -40,10 +42,10 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
             <p className="text-muted-foreground mt-1">{album.description}</p>
           )}
         </div>
-        <UploadPhotoDialog albumId={params.albumId} />
+        <UploadPhotoDialog albumId={resolvedParams.albumId} />
       </div>
       <Suspense fallback={<AlbumPhotos photos={[]} isLoading />}>
-        <AlbumContent albumId={params.albumId} />
+        <AlbumContent albumId={resolvedParams.albumId} />
       </Suspense>
     </div>
   )
