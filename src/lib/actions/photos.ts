@@ -460,65 +460,48 @@ export async function deletePhoto(photoId: string): Promise<{ success: boolean; 
             return { success: false, error: 'Unauthorized: You do not own this photo.' };
         }
 
-        // Delete from storage
-        const storagePaths = [photo.storage_path_original];
+        // Only delete the watermarked version if it exists
         if (photo.storage_path_watermarked) {
-            storagePaths.push(photo.storage_path_watermarked);
-        }
+            console.log('Deleting watermarked version from storage:', photo.storage_path_watermarked);
+            const { error: storageError } = await supabase.storage
+                .from('photos')
+                .remove([photo.storage_path_watermarked]);
 
-        console.log('Deleting from storage:', storagePaths);
-        const { error: storageError } = await supabase.storage
-            .from('photos')
-            .remove(storagePaths);
+            if (storageError) {
+                console.error('Storage deletion error:', storageError);
+                return { success: false, error: 'Failed to delete watermarked photo from storage.' };
+            }
 
-        if (storageError) {
-            console.error('Storage deletion error:', storageError);
-            return { success: false, error: 'Failed to delete photo from storage.' };
-        }
+            console.log('Watermarked version deletion successful');
 
-        console.log('Storage deletion successful');
+            // Update the database record to remove watermarked path and size
+            console.log('Updating photo record to remove watermarked information');
+            const { error: updateError } = await supabase
+                .from('photos')
+                .update({
+                    storage_path_watermarked: null,
+                    watermarked_size_bytes: null
+                })
+                .eq('id', photoId);
 
-        // Delete from database
-        console.log('Deleting from database:', photoId);
-        const { error: dbError } = await supabase
-            .from('photos')
-            .delete()
-            .eq('id', photoId);
+            if (updateError) {
+                console.error('Database update error:', updateError);
+                return { success: false, error: 'Failed to update photo record in database.' };
+            }
 
-        if (dbError) {
-            console.error('Database deletion error:', dbError);
-            return { success: false, error: 'Failed to delete photo from database.' };
-        }
-
-        console.log('Database deletion successful');
-
-        // Verify the photo was actually deleted
-        console.log('Verifying photo deletion...');
-        const { data: verifyPhoto, error: verifyError } = await supabase
-            .from('photos')
-            .select('id')
-            .eq('id', photoId)
-            .single();
-
-        if (verifyError && verifyError.code === 'PGRST116') {
-            // PGRST116 is "no rows returned" which is what we want
-            console.log('Verification successful: Photo record not found in database');
-        } else if (verifyPhoto) {
-            console.error('Verification failed: Photo record still exists in database', verifyPhoto);
-            return { success: false, error: 'Photo record was not deleted from database.' };
+            console.log('Database update successful');
         } else {
-            console.error('Verification error:', verifyError);
-            return { success: false, error: 'Failed to verify photo deletion.' };
+            console.log('No watermarked version found to delete');
         }
 
         // Revalidate the album page
         console.log('Revalidating album page:', photo.album_id);
         revalidatePath(`/dashboard/albums/${photo.album_id}`);
 
-        console.log('Photo deletion completed successfully');
+        console.log('Photo watermark deletion completed successfully');
         return { success: true };
     } catch (error) {
         console.error('Unexpected error in deletePhoto:', error);
-        return { success: false, error: 'An unexpected error occurred while deleting the photo.' };
+        return { success: false, error: 'An unexpected error occurred while deleting the photo watermark.' };
     }
 } 

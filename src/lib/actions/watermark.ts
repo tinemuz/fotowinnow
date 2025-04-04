@@ -195,12 +195,17 @@ export async function addWatermark(formData: FormData): Promise<WatermarkResult>
                 left: 0,
                 blend: "over",
             }])
-            .png({ compressionLevel: 6 })
+            .webp({
+                quality: 80,  // Good balance between quality and size
+                effort: 6,    // Higher compression effort (0-6)
+                lossless: false
+            })
             .toBuffer();
 
         console.log('Watermark process completed successfully:', {
             resultSize: result.length,
-            compressionRatio: (result.length / fileBuffer.length * 100).toFixed(2) + '%'
+            compressionRatio: (result.length / fileBuffer.length * 100).toFixed(2) + '%',
+            format: 'webp'
         });
 
         return { success: true, result: result.toString('base64') };

@@ -36,7 +36,8 @@ export function AlbumPhotos({ photos: initialPhotos, isLoading, error, albumId }
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set())
   const [photos, setPhotos] = useState(initialPhotos)
   const [isWatermarking, setIsWatermarking] = useState(false)
-  const [viewMode, setViewMode] = useState<"original" | "watermarked">("original")
+  type ViewMode = "original" | "watermarked";
+  const [viewMode, setViewMode] = useState<ViewMode>("original")
   const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set())
   const [isDeleting, setIsDeleting] = useState(false)
   const [showImageDetails, setShowImageDetails] = useState(false)
@@ -184,7 +185,7 @@ export function AlbumPhotos({ photos: initialPhotos, isLoading, error, albumId }
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "original" | "watermarked")}>
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
             <TabsList>
               <TabsTrigger value="original">Original</TabsTrigger>
               <TabsTrigger value="watermarked" disabled={!photos.some(p => p.storage_path_watermarked)}>
@@ -282,7 +283,7 @@ export function AlbumPhotos({ photos: initialPhotos, isLoading, error, albumId }
                   {showImageDetails && (
                     <div className="absolute bottom-0 left-0 right-0 bg-black/75 text-white p-2 text-xs">
                       <div className="flex justify-between">
-                        <span>Type: {photo.filename_original.split('.').pop()?.toUpperCase()}</span>
+                        <span>Type: {(viewMode as string) === "watermarked" ? "WEBP" : photo.filename_original.split('.').pop()?.toUpperCase()}</span>
                         <span>Size: {photo.watermarked_size_bytes ? `${(photo.watermarked_size_bytes / 1024 / 1024).toFixed(2)} MB` : 'N/A'}</span>
                       </div>
                       <div className="flex justify-between">
@@ -337,7 +338,7 @@ export function AlbumPhotos({ photos: initialPhotos, isLoading, error, albumId }
               {showImageDetails && (
                 <div className="absolute bottom-0 left-0 right-0 bg-black/75 text-white p-2 text-xs">
                   <div className="flex justify-between">
-                    <span>Type: {photo.filename_original.split('.').pop()?.toUpperCase()}</span>
+                    <span>Type: {(viewMode as string) === "watermarked" ? "WEBP" : photo.filename_original.split('.').pop()?.toUpperCase()}</span>
                     <span>Size: {photo.size_bytes ? `${(photo.size_bytes / 1024 / 1024).toFixed(2)} MB` : 'N/A'}</span>
                   </div>
                   <div className="flex justify-between">
