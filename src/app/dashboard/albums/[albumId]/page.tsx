@@ -54,7 +54,7 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
           <UploadPhotoDialog albumId={resolvedParams.albumId} />
         </div>
       </div>
-      <Suspense fallback={<AlbumPhotos photos={[]} isLoading />}>
+      <Suspense fallback={<AlbumPhotos photos={[]} isLoading albumId={resolvedParams.albumId} />}>
         <AlbumContent albumId={resolvedParams.albumId} />
       </Suspense>
     </div>
