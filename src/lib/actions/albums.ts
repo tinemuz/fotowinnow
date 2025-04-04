@@ -413,3 +413,48 @@ export async function applyAlbumWatermark(albumId: string): Promise<{
         };
     }
 }
+
+export async function getAlbumStats(): Promise<{
+    draftCount: number;
+    publishedCount: number;
+    archivedCount: number;
+    totalPhotos: number;
+}> {
+    console.log('Starting getAlbumStats process');
+    const profileId = await getAuthenticatedProfileId();
+    console.log('Retrieved profile ID:', profileId);
+
+    const supabase = await createSupabaseServerActionClient();
+    console.log('Supabase client created, querying albums');
+
+    // Get albums with their status and photo count
+    const { data: albums, error: albumsError } = await supabase
+        .from('albums')
+        .select(`
+            id,
+            status,
+            photos:photos (
+                id
+            )
+        `)
+        .eq('owner_id', profileId);
+
+    if (albumsError) {
+        console.error('Error fetching albums:', {
+            error: albumsError,
+            profileId
+        });
+        throw new Error('Failed to fetch albums');
+    }
+
+    // Calculate statistics
+    const stats = {
+        draftCount: albums?.filter(album => album.status === 'draft').length || 0,
+        publishedCount: albums?.filter(album => album.status === 'published').length || 0,
+        archivedCount: albums?.filter(album => album.status === 'archived').length || 0,
+        totalPhotos: albums?.reduce((total, album) => total + (album.photos?.length || 0), 0) || 0
+    };
+
+    console.log('Successfully retrieved album stats:', stats);
+    return stats;
+}

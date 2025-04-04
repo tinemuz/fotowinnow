@@ -1,7 +1,10 @@
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card"
 import {IconAlbum, IconClockHour4, IconFileSearch, IconFileUpload, IconPhoto,} from "@tabler/icons-react"
+import { getAlbumStats } from "@/lib/actions/albums"
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const stats = await getAlbumStats();
+
   return (
     <div className="flex flex-col w-full gap-4 py-4 md:gap-6 md:py-6">
       <h1 className="text-2xl font-semibold">Dashboard</h1>
@@ -12,29 +15,29 @@ export default function DashboardPage() {
             <IconAlbum className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
+            <div className="text-2xl font-bold">{stats.draftCount}</div>
           </CardContent>
         </Card>
         <Card className="">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium truncate">
-              Submitted Albums
+              Published Albums
             </CardTitle>
             <IconFileUpload className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">5</div>
+            <div className="text-2xl font-bold">{stats.publishedCount}</div>
           </CardContent>
         </Card>
         <Card className="min-w-[180px] min-h-[120px]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium truncate">
-              Albums In Review
+              Archived Albums
             </CardTitle>
             <IconFileSearch className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2</div>
+            <div className="text-2xl font-bold">{stats.archivedCount}</div>
           </CardContent>
         </Card>
         <Card className="min-w-[180px] min-h-[120px]">
@@ -45,7 +48,7 @@ export default function DashboardPage() {
             <IconClockHour4 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1</div>
+            <div className="text-2xl font-bold">0</div>
           </CardContent>
         </Card>
         <Card className="min-w-[180px] min-h-[120px]">
@@ -54,7 +57,7 @@ export default function DashboardPage() {
             <IconPhoto className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">245</div>
+            <div className="text-2xl font-bold">{stats.totalPhotos}</div>
           </CardContent>
         </Card>
       </div>
