@@ -45,6 +45,11 @@ export function AlbumPhotos({ photos: initialPhotos, isLoading, error, albumId }
     setPhotos(initialPhotos)
   }, [initialPhotos])
 
+  // Clear loaded images when switching views
+  useEffect(() => {
+    setLoadedImages(new Set())
+  }, [viewMode])
+
   useEffect(() => {
     // Subscribe to photo updates
     const photosChannel = supabase
@@ -161,7 +166,7 @@ export function AlbumPhotos({ photos: initialPhotos, isLoading, error, albumId }
                     src={`/api/photos/${encodeURIComponent(photo.storage_path_watermarked || '')}`}
                     alt={photo.filename_original}
                     fill
-                    className="object-cover"
+                    className={`object-cover transition-opacity duration-200 ${loadedImages.has(photo.id) ? 'opacity-100' : 'opacity-0'}`}
                     sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                     priority={false}
                     unoptimized
@@ -196,7 +201,7 @@ export function AlbumPhotos({ photos: initialPhotos, isLoading, error, albumId }
                 src={`/api/photos/${encodeURIComponent(photo.storage_path_original)}`}
                 alt={photo.filename_original}
                 fill
-                className="object-cover"
+                className={`object-cover transition-opacity duration-200 ${loadedImages.has(photo.id) ? 'opacity-100' : 'opacity-0'}`}
                 sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 priority={false}
                 unoptimized
