@@ -7,7 +7,7 @@ import { auth } from '@clerk/nextjs/server';
 
 // Function to create Supabase client for Server Components, Server Actions, Route Handlers
 // It reads/writes cookies to manage the user's session server-side.
-export function createSupabaseServerClient(cookieStore: ReadonlyRequestCookies) {
+export async function createSupabaseServerClient(cookieStore: ReadonlyRequestCookies) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -22,23 +22,24 @@ export function createSupabaseServerClient(cookieStore: ReadonlyRequestCookies) 
         supabaseAnonKey,
         {
             cookies: {
-                getAll() {
-                    return Array.from(cookieStore.getAll()).map(cookie => ({
+                async getAll() {
+                    const allCookies = await cookieStore.getAll();
+                    return allCookies.map(cookie => ({
                         name: cookie.name,
                         value: cookie.value
                     }));
                 },
-                setAll(cookies: { name: string; value: string }[]) {
+                async setAll(cookies: { name: string; value: string }[]) {
                     try {
-                        cookies.forEach(cookie => {
-                            cookieStore.set({
+                        for (const cookie of cookies) {
+                            await cookieStore.set({
                                 name: cookie.name,
                                 value: cookie.value,
                                 sameSite: 'lax',
                                 path: '/',
                                 secure: process.env.NODE_ENV === 'production'
                             });
-                        });
+                        }
                     } catch {
                         // The `setAll` method was called from a Server Component.
                         // This can be ignored if you have middleware refreshing
@@ -60,10 +61,10 @@ export function createSupabaseServerClient(cookieStore: ReadonlyRequestCookies) 
 // where you might need to write cookies back.
 // Often, createSupabaseServerClient can be used for these too, but this provides a clear separation.
 export async function createSupabaseServerActionClient() {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const { sessionId } = await auth();
 
-    const client = createSupabaseServerClient(cookieStore as unknown as ReadonlyRequestCookies);
+    const client = await createSupabaseServerClient(cookieStore as unknown as ReadonlyRequestCookies);
 
     if (sessionId) {
         await client.auth.setSession({

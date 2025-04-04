@@ -82,6 +82,8 @@ export async function uploadPhoto(formData: FormData): Promise<UploadPhotoResult
     try {
         // Get authenticated user
         const { userId: clerkUserId } = await auth();
+        console.log('Clerk User ID:', clerkUserId);
+
         if (!clerkUserId) {
             console.error('Authentication failed - No Clerk user ID found');
             return { success: false, error: 'Unauthorized: User not logged in.' };
@@ -90,6 +92,14 @@ export async function uploadPhoto(formData: FormData): Promise<UploadPhotoResult
         // Extract and validate input
         const albumId = formData.get('albumId');
         const file = formData.get('file');
+
+        console.log('Input validation:', {
+            albumId,
+            hasFile: file instanceof File,
+            fileName: file instanceof File ? file.name : 'not a file',
+            fileSize: file instanceof File ? file.size : 'not a file',
+            fileType: file instanceof File ? file.type : 'not a file'
+        });
 
         if (!albumId || !(file instanceof File)) {
             console.error('Invalid input:', { hasAlbumId: !!albumId, isFile: file instanceof File });
@@ -109,6 +119,8 @@ export async function uploadPhoto(formData: FormData): Promise<UploadPhotoResult
 
         // Get user's profile ID
         const supabaseAdmin = createSupabaseAdminClient();
+        console.log('Fetching profile for Clerk user ID:', clerkUserId);
+
         const { data: profile, error: profileError } = await supabaseAdmin
             .from('profiles')
             .select('id')
@@ -116,11 +128,25 @@ export async function uploadPhoto(formData: FormData): Promise<UploadPhotoResult
             .single();
 
         if (profileError || !profile) {
-            console.error('Profile query error:', profileError);
+            console.error('Profile query error:', {
+                error: profileError,
+                clerkUserId,
+                query: 'profiles.select(id).eq(clerk_user_id, userId).single()',
+                errorDetails: {
+                    code: profileError?.code,
+                    message: profileError?.message,
+                    details: profileError?.details,
+                    hint: profileError?.hint
+                }
+            });
             return { success: false, error: 'User profile not found.' };
         }
 
+        console.log('Profile found:', { profileId: profile.id });
+
         // Verify album ownership
+        console.log('Verifying album ownership:', { albumId, profileId: profile.id });
+
         const { data: album, error: albumError } = await supabaseAdmin
             .from('albums')
             .select('owner_id')
@@ -128,14 +154,27 @@ export async function uploadPhoto(formData: FormData): Promise<UploadPhotoResult
             .single();
 
         if (albumError || !album) {
-            console.error('Album query error:', albumError);
+            console.error('Album query error:', {
+                error: albumError,
+                albumId,
+                query: 'albums.select(owner_id).eq(id, albumId).single()',
+                errorDetails: {
+                    code: albumError?.code,
+                    message: albumError?.message,
+                    details: albumError?.details,
+                    hint: albumError?.hint
+                }
+            });
             return { success: false, error: 'Album not found.' };
         }
+
+        console.log('Album found:', { albumId, ownerId: album.owner_id });
 
         if (album.owner_id !== profile.id) {
             console.error('Unauthorized album access:', {
                 profileId: profile.id,
-                albumOwnerId: album.owner_id
+                albumOwnerId: album.owner_id,
+                albumId
             });
             return { success: false, error: 'Unauthorized: You do not own this album.' };
         }
@@ -143,6 +182,12 @@ export async function uploadPhoto(formData: FormData): Promise<UploadPhotoResult
         // Generate unique filename and storage path
         const uniqueFilename = `${Date.now()}-${file.name}`;
         const storagePath = `${profile.id}/${albumId}/${uniqueFilename}`;
+
+        console.log('Preparing storage upload:', {
+            storagePath,
+            fileSize: file.size,
+            fileType: file.type
+        });
 
         // Upload to Supabase Storage
         const supabase = await createSupabaseServerActionClient();
@@ -154,11 +199,22 @@ export async function uploadPhoto(formData: FormData): Promise<UploadPhotoResult
             });
 
         if (uploadError) {
-            console.error('Storage upload error:', uploadError);
+            console.error('Storage upload error:', {
+                error: uploadError,
+                storagePath,
+                errorDetails: {
+                    message: uploadError.message,
+                    name: uploadError.name
+                }
+            });
             return { success: false, error: 'Failed to upload file to storage.' };
         }
 
+        console.log('File uploaded successfully:', { storagePath: uploadData.path });
+
         // Get the next order_in_album value
+        console.log('Getting next order_in_album value for album:', albumId);
+
         const { data: lastPhoto, error: orderError } = await supabase
             .from('photos')
             .select('order_in_album')
@@ -167,9 +223,24 @@ export async function uploadPhoto(formData: FormData): Promise<UploadPhotoResult
             .limit(1)
             .single();
 
+        if (orderError && orderError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+            console.error('Error getting next order:', orderError);
+        }
+
         const nextOrder = (lastPhoto?.order_in_album ?? -1) + 1;
+        console.log('Next order_in_album value:', nextOrder);
 
         // Insert photo record
+        console.log('Inserting photo record:', {
+            albumId,
+            uploaderId: profile.id,
+            storagePath: uploadData.path,
+            filename: file.name,
+            mimeType: file.type,
+            size: file.size,
+            order: nextOrder
+        });
+
         const { data: newPhoto, error: dbError } = await supabase
             .from('photos')
             .insert({
@@ -185,73 +256,190 @@ export async function uploadPhoto(formData: FormData): Promise<UploadPhotoResult
             .single();
 
         if (dbError) {
-            console.error('Database insert error:', dbError);
+            console.error('Database insert error:', {
+                error: dbError,
+                errorDetails: {
+                    code: dbError.code,
+                    message: dbError.message,
+                    details: dbError.details,
+                    hint: dbError.hint
+                }
+            });
+
             // Attempt to delete the uploaded file if DB insert fails
+            console.log('Attempting to delete uploaded file after DB failure:', uploadData.path);
             await supabase.storage
                 .from('photos')
                 .remove([uploadData.path]);
+
             return { success: false, error: 'Failed to save photo metadata to database.' };
         }
+
+        console.log('Photo record created successfully:', {
+            photoId: newPhoto.id,
+            albumId,
+            storagePath: uploadData.path
+        });
 
         // Revalidate the album page
         revalidatePath(`/dashboard/albums/${albumId}`);
 
-        console.log('Photo uploaded successfully:', {
-            photoId: newPhoto.id,
-            albumId: albumId,
-            storagePath: uploadData.path
-        });
-
         return { success: true, photo: newPhoto as Photo };
     } catch (error) {
-        console.error('Unexpected error in uploadPhoto:', error);
+        console.error('Unexpected error in uploadPhoto:', {
+            error,
+            errorMessage: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined
+        });
         return { success: false, error: 'An unexpected error occurred while uploading the photo.' };
     }
 }
 
 export async function getPhotos(albumId: string): Promise<Photo[]> {
-    console.log('Starting getPhotos process');
-    const profileId = await getAuthenticatedProfileId();
-    console.log('Retrieved profile ID:', profileId);
+    console.log('Starting getPhotos process for album:', albumId);
+    try {
+        const profileId = await getAuthenticatedProfileId();
+        console.log('Retrieved profile ID:', profileId);
 
-    const supabase = await createSupabaseServerActionClient();
-    console.log('Supabase client created, querying photos');
+        const supabase = await createSupabaseServerActionClient();
+        console.log('Supabase client created, verifying album ownership');
 
-    // First verify album ownership
-    const { data: album, error: albumError } = await supabase
-        .from('albums')
-        .select('owner_id')
-        .eq('id', albumId)
-        .single();
+        // First verify album ownership
+        const { data: album, error: albumError } = await supabase
+            .from('albums')
+            .select('owner_id')
+            .eq('id', albumId)
+            .single();
 
-    if (albumError || !album) {
-        console.error('Album query error:', albumError);
-        return [];
-    }
+        if (albumError) {
+            console.error('Album query error:', {
+                error: albumError,
+                albumId,
+                errorDetails: {
+                    code: albumError.code,
+                    message: albumError.message,
+                    details: albumError.details,
+                    hint: albumError.hint
+                }
+            });
+            return [];
+        }
 
-    if (album.owner_id !== profileId) {
-        console.error('Unauthorized album access:', {
-            profileId,
-            albumOwnerId: album.owner_id
-        });
-        return [];
-    }
+        if (!album) {
+            console.error('Album not found:', albumId);
+            return [];
+        }
 
-    // Get the photos
-    const { data: photos, error: photosError } = await supabase
-        .from('photos')
-        .select('*')
-        .eq('album_id', albumId)
-        .order('order_in_album', { ascending: true });
+        console.log('Album found:', { albumId, ownerId: album.owner_id });
 
-    if (photosError) {
-        console.error('Error fetching photos:', {
-            error: photosError,
+        if (album.owner_id !== profileId) {
+            console.error('Unauthorized album access:', {
+                profileId,
+                albumOwnerId: album.owner_id,
+                albumId
+            });
+            return [];
+        }
+
+        // Get the photos
+        console.log('Fetching photos for album:', albumId);
+
+        const { data: photos, error: photosError } = await supabase
+            .from('photos')
+            .select('*')
+            .eq('album_id', albumId)
+            .order('order_in_album', { ascending: true });
+
+        if (photosError) {
+            console.error('Error fetching photos:', {
+                error: photosError,
+                albumId,
+                errorDetails: {
+                    code: photosError.code,
+                    message: photosError.message,
+                    details: photosError.details,
+                    hint: photosError.hint
+                }
+            });
+            return [];
+        }
+
+        console.log('Photos fetched successfully:', {
             albumId,
-            profileId
+            count: photos?.length || 0
+        });
+
+        return photos || [];
+    } catch (error) {
+        console.error('Unexpected error in getPhotos:', {
+            error,
+            errorMessage: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined
         });
         return [];
     }
+}
 
-    return photos || [];
+export async function getSignedUrls(storagePaths: string[]): Promise<{ [key: string]: string }> {
+    console.log('Starting getSignedUrls process');
+    try {
+        const profileId = await getAuthenticatedProfileId();
+        const supabase = await createSupabaseServerActionClient();
+
+        // Verify ownership of all photos
+        const { data: photos, error: photosError } = await supabase
+            .from('photos')
+            .select('storage_path_original, album_id')
+            .in('storage_path_original', storagePaths);
+
+        if (photosError) {
+            console.error('Error fetching photos:', photosError);
+            throw new Error('Failed to verify photo ownership');
+        }
+
+        // Get unique album IDs
+        const albumIds = [...new Set(photos.map(photo => photo.album_id))];
+
+        // Verify album ownership
+        const { data: albums, error: albumsError } = await supabase
+            .from('albums')
+            .select('id, owner_id')
+            .in('id', albumIds);
+
+        if (albumsError) {
+            console.error('Error fetching albums:', albumsError);
+            throw new Error('Failed to verify album ownership');
+        }
+
+        // Check if user owns all albums
+        const unauthorizedAlbums = albums.filter(album => album.owner_id !== profileId);
+        if (unauthorizedAlbums.length > 0) {
+            console.error('Unauthorized access to albums:', unauthorizedAlbums);
+            throw new Error('Unauthorized access to photos');
+        }
+
+        // Generate signed URLs
+        const { data: signedUrls, error: signedUrlsError } = await supabase
+            .storage
+            .from('photos')
+            .createSignedUrls(storagePaths, 3600); // URLs valid for 1 hour
+
+        if (signedUrlsError) {
+            console.error('Error generating signed URLs:', signedUrlsError);
+            throw new Error('Failed to generate signed URLs');
+        }
+
+        // Map storage paths to signed URLs
+        const urlMap: { [key: string]: string } = {};
+        signedUrls.forEach((signedUrl, index) => {
+            if (signedUrl.signedUrl) {
+                urlMap[storagePaths[index]] = signedUrl.signedUrl;
+            }
+        });
+
+        return urlMap;
+    } catch (error) {
+        console.error('Unexpected error in getSignedUrls:', error);
+        throw error;
+    }
 } 

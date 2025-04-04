@@ -4,6 +4,7 @@ import { AlbumPhotos } from "@/components/albums/album-photos"
 import { UploadPhotoDialog } from "@/components/albums/upload-photo-dialog"
 import { notFound } from "next/navigation"
 import { Metadata } from "next"
+import { Suspense } from "react"
 
 interface AlbumPageProps {
   params: {
@@ -18,9 +19,13 @@ export async function generateMetadata({ params }: AlbumPageProps): Promise<Meta
   }
 }
 
+async function AlbumContent({ albumId }: { albumId: string }) {
+  const photos = await getPhotos(albumId)
+  return <AlbumPhotos photos={photos} />
+}
+
 export default async function AlbumPage({ params }: AlbumPageProps) {
   const album = await getAlbum(params.albumId)
-  const photos = await getPhotos(params.albumId)
 
   if (!album) {
     notFound()
@@ -37,7 +42,9 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
         </div>
         <UploadPhotoDialog albumId={params.albumId} />
       </div>
-      <AlbumPhotos photos={photos} />
+      <Suspense fallback={<AlbumPhotos photos={[]} isLoading />}>
+        <AlbumContent albumId={params.albumId} />
+      </Suspense>
     </div>
   )
 } 

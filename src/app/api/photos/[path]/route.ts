@@ -1,24 +1,22 @@
-import { createSupabaseServerActionClient } from "@/lib/supabase/server"
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from 'next/server';
+import { getSignedUrls } from '@/lib/actions/photos';
 
 export async function GET(
-    request: Request,
+    request: NextRequest,
     { params }: { params: { path: string } }
 ) {
     try {
-        const supabase = await createSupabaseServerActionClient()
-        const { data, error } = await supabase.storage
-            .from("photos")
-            .createSignedUrl(params.path, 3600)
+        const storagePath = decodeURIComponent(params.path);
+        const signedUrls = await getSignedUrls([storagePath]);
 
-        if (error) {
-            console.error("Error creating signed URL:", error)
-            return new NextResponse("Error creating signed URL", { status: 500 })
+        if (!signedUrls[storagePath]) {
+            return new NextResponse('Photo not found', { status: 404 });
         }
 
-        return NextResponse.redirect(data.signedUrl)
+        // Redirect to the signed URL
+        return NextResponse.redirect(signedUrls[storagePath]);
     } catch (error) {
-        console.error("Error in photos route:", error)
-        return new NextResponse("Internal Server Error", { status: 500 })
+        console.error('Error in photo access route:', error);
+        return new NextResponse('Unauthorized', { status: 401 });
     }
 } 
