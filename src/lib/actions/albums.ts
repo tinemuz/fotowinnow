@@ -10,6 +10,7 @@ const createAlbumSchema = z.object({
     name: z.string().min(1, 'Album name is required'),
     description: z.string().optional(),
     client_greeting: z.string().optional(),
+    watermark_text: z.string().optional(),
 });
 
 async function getAuthenticatedProfileId() {
@@ -138,12 +139,14 @@ export async function createAlbum(formData: FormData): Promise<CreateAlbumResult
             name: formData.get('name'),
             description: formData.get('description'),
             client_greeting: formData.get('client_greeting'),
+            watermark_text: formData.get('watermark_text') || 'fotowinnow',
         };
 
         console.log('Raw form data:', {
             nameLength: rawData.name?.toString().length,
             descriptionLength: rawData.description?.toString().length,
-            clientGreetingLength: rawData.client_greeting?.toString().length
+            clientGreetingLength: rawData.client_greeting?.toString().length,
+            watermarkTextLength: rawData.watermark_text?.toString().length
         });
 
         // Validate using safeParse for better error handling
@@ -172,6 +175,7 @@ export async function createAlbum(formData: FormData): Promise<CreateAlbumResult
                     name: validatedData.name,
                     description: validatedData.description || null,
                     client_greeting: validatedData.client_greeting || null,
+                    watermark_text: validatedData.watermark_text || 'fotowinnow',
                     status: 'draft',
                     current_review_cycle: 0,
                 }
@@ -186,7 +190,8 @@ export async function createAlbum(formData: FormData): Promise<CreateAlbumResult
                 albumData: {
                     name: validatedData.name,
                     hasDescription: !!validatedData.description,
-                    hasClientGreeting: !!validatedData.client_greeting
+                    hasClientGreeting: !!validatedData.client_greeting,
+                    hasWatermarkText: !!validatedData.watermark_text
                 }
             });
             return {

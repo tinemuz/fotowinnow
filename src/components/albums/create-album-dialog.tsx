@@ -25,6 +25,7 @@ export function CreateAlbumDialog() {
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [clientGreeting, setClientGreeting] = useState("")
+  const [watermarkText, setWatermarkText] = useState("fotowinnow")
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,6 +37,7 @@ export function CreateAlbumDialog() {
       formData.append('name', name)
       formData.append('description', description)
       formData.append('client_greeting', clientGreeting)
+      formData.append('watermark_text', watermarkText)
 
       await createAlbum(formData)
       toast.success("Album created successfully")
@@ -43,6 +45,7 @@ export function CreateAlbumDialog() {
       setName("")
       setDescription("")
       setClientGreeting("")
+      setWatermarkText("fotowinnow")
       router.refresh()
     } catch (error) {
       toast.error("Failed to create album")
@@ -99,6 +102,19 @@ export function CreateAlbumDialog() {
                 placeholder="Enter a greeting message for clients"
                 disabled={isLoading}
               />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="watermark_text">Watermark Text</Label>
+              <Input
+                id="watermark_text"
+                value={watermarkText}
+                onChange={(e) => setWatermarkText(e.target.value)}
+                placeholder="Enter watermark text"
+                disabled={isLoading}
+              />
+              <p className="text-sm text-muted-foreground">
+                This text will be used as a watermark on all photos in this album.
+              </p>
             </div>
           </div>
           <DialogFooter>

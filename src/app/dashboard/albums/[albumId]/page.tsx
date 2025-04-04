@@ -2,6 +2,7 @@ import { getAlbum } from "@/lib/actions/albums"
 import { getPhotos } from "@/lib/actions/photos"
 import { AlbumPhotos } from "@/components/albums/album-photos"
 import { UploadPhotoDialog } from "@/components/albums/upload-photo-dialog"
+import { AlbumSettingsDialog } from "@/components/albums/album-settings-dialog"
 import { notFound } from "next/navigation"
 import { Metadata } from "next"
 import { Suspense } from "react"
@@ -48,7 +49,10 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
             <p className="text-muted-foreground mt-1">{album.description}</p>
           )}
         </div>
-        <UploadPhotoDialog albumId={resolvedParams.albumId} />
+        <div className="flex items-center gap-2">
+          <AlbumSettingsDialog album={album} />
+          <UploadPhotoDialog albumId={resolvedParams.albumId} />
+        </div>
       </div>
       <Suspense fallback={<AlbumPhotos photos={[]} isLoading />}>
         <AlbumContent albumId={resolvedParams.albumId} />

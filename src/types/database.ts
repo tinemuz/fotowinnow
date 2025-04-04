@@ -8,6 +8,7 @@ export type Album = {
     current_review_cycle: number;
     created_at: string;
     updated_at: string;
+    watermark_text: string;
 };
 
 export type Profile = {
