@@ -101,32 +101,32 @@ export function ImageDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <div className="flex flex-col md:flex-row h-full">
-          {/* Image Section */}
-          <div className="relative w-full md:w-2/3 h-[250px] md:h-full flex items-center justify-center bg-black">
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <div className="flex flex-col h-full">
+          {/* Image Section - Fixed height */}
+          <div className="relative w-full h-[50vh] min-h-[400px] flex-shrink-0 flex items-center justify-center bg-black">
             <Button
               variant="ghost"
               size="icon"
-              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-black/20 hover:bg-black/40 text-white rounded-full h-8 w-8"
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-black/20 hover:bg-black/40 text-white rounded-full h-10 w-10"
               onClick={() => navigateToImage("prev")}
             >
-              <ChevronLeft className="h-5 w-5" />
+              <ChevronLeft className="h-6 w-6" />
             </Button>
 
             <Button
               variant="ghost"
               size="icon"
-              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-black/20 hover:bg-black/40 text-white rounded-full h-8 w-8"
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-black/20 hover:bg-black/40 text-white rounded-full h-10 w-10"
               onClick={() => navigateToImage("next")}
             >
-              <ChevronRight className="h-5 w-5" />
+              <ChevronRight className="h-6 w-6" />
             </Button>
 
             <Button
               variant="ghost"
               size="icon"
-              className="absolute right-2 top-2 z-10 bg-black/20 hover:bg-black/40 text-white rounded-full h-8 w-8"
+              className="absolute right-4 top-4 z-10 bg-black/20 hover:bg-black/40 text-white rounded-full h-10 w-10"
               onClick={onClose}
             >
               <X className="h-5 w-5" />
@@ -153,15 +153,15 @@ export function ImageDetailModal({
               )}
             </div>
 
-            <div className="absolute bottom-2 left-2 right-2 text-white bg-black/50 px-2 py-1 rounded text-sm truncate">
+            <div className="absolute bottom-4 left-4 right-4 text-white bg-black/50 px-3 py-2 rounded-md text-sm">
               {image.caption ?? "Untitled"}
             </div>
           </div>
 
           {/* Comments Section */}
-          <div className="w-full md:w-1/3 p-3 flex flex-col border-t md:border-t-0 md:border-l">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-sm font-medium">Comments</h3>
+          <div className="flex flex-col h-[40vh] min-h-[300px] border-t">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h3 className="text-base font-medium">Comments</h3>
               {isClientView && (
                 <Button
                   variant="outline"
@@ -169,40 +169,42 @@ export function ImageDetailModal({
                   className={markedForDeletion ? "bg-red-100" : ""}
                   onClick={() => setMarkedForDeletion(!markedForDeletion)}
                 >
-                  <Trash2 className="h-3 w-3 mr-1" />
+                  <Trash2 className="h-4 w-4 mr-1" />
                   {markedForDeletion ? "Undo" : "Delete"}
                 </Button>
               )}
             </div>
 
-            <ScrollArea className="flex-grow">
-              {comments.length > 0 ? (
-                <div className="space-y-3">
-                  {comments.map((comment) => (
-                    <div key={comment.id} className="text-sm border-b pb-2">
-                      <div className="flex justify-between">
-                        <span className="font-medium">{comment.author}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(comment.createdAt).toLocaleDateString()}
-                        </span>
+            <div className="flex-1 overflow-hidden">
+              <ScrollArea className="h-full p-4">
+                {comments.length > 0 ? (
+                  <div className="space-y-4">
+                    {comments.map((comment) => (
+                      <div key={comment.id} className="text-sm border-b pb-3">
+                        <div className="flex justify-between mb-1">
+                          <span className="font-medium">{comment.author}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(comment.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="text-sm">{comment.text}</p>
                       </div>
-                      <p className="mt-1 text-sm">{comment.text}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-muted-foreground text-center py-4">No comments yet</p>
-              )}
-            </ScrollArea>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-6">No comments yet</p>
+                )}
+              </ScrollArea>
+            </div>
 
-            <div className="mt-3">
+            <div className="p-4 border-t">
               {isAddingComment ? (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <Textarea
                     placeholder="Add your comment..."
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
-                    className="min-h-[80px] text-sm"
+                    className="min-h-[100px] text-sm"
                   />
                   <div className="flex justify-end gap-2">
                     <Button
@@ -222,7 +224,7 @@ export function ImageDetailModal({
                 </div>
               ) : (
                 <Button variant="outline" className="w-full text-sm" size="sm" onClick={() => setIsAddingComment(true)}>
-                  <MessageSquare className="h-3 w-3 mr-2" />
+                  <MessageSquare className="h-4 w-4 mr-2" />
                   Add Comment
                 </Button>
               )}
