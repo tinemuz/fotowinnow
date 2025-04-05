@@ -16,13 +16,13 @@ interface ImageGridProps {
 
 export function ImageGrid({ images, watermarked, clientView = false, onImageClick }: ImageGridProps) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
       {images.map((image) => (
-        <Card key={image.id} className="overflow-hidden">
+        <Card key={image.id} className="overflow-hidden py-0">
           <div className="relative aspect-square cursor-pointer" onClick={() => onImageClick(image)}>
             <Image
-              src={image.url || "/placeholder.svg"}
-              alt={image.caption || "Album photo"}
+              src={image.url ?? "/placeholder.svg"}
+              alt={image.caption ?? "Album photo"}
               fill
               className="object-cover"
             />
@@ -34,23 +34,23 @@ export function ImageGrid({ images, watermarked, clientView = false, onImageClic
               </div>
             )}
           </div>
-          <CardContent className="p-3">
+          <CardContent className="p-2 pt-0">
             <div className="flex justify-between items-center">
-              <p className="text-sm truncate">{image.caption || "Untitled"}</p>
-              {!clientView ? (
+              <p className="text-xs truncate">{image.caption ?? "Untitled"}</p>
+              {!clientView && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreHorizontal className="h-4 w-4" />
+                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                      <MoreHorizontal className="h-3 w-3" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem>Edit Caption</DropdownMenuItem>
-                    <DropdownMenuItem>Replace Image</DropdownMenuItem>
+                    <DropdownMenuItem>Replace</DropdownMenuItem>
                     <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              ) : null}
+              )}
             </div>
           </CardContent>
         </Card>

@@ -5,24 +5,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs"
 import { ImageGrid } from "~/components/image-grid"
 import { ShareModal } from "~/components/share-modal"
 import { mockAlbums, mockImages, type Image as ImageType } from "~/lib/data"
-import { ArrowLeft, Eye, Plus, Share, Settings } from "lucide-react"
+import { ArrowLeft, Eye, Plus, Share } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { useParams } from "next/navigation"
 import { ImageDetailModal } from "~/components/image-detail-modal"
-import { AlbumSettings } from "~/components/album-settings"
-import { Breadcrumbs } from "~/components/breadcrumbs"
+import { UploadPhotosModal } from "~/components/upload-photos-modal"
 
 export default function AlbumDetail() {
   const params = useParams()
   const albumId = params.id as string
   const album = mockAlbums.find((a) => a.id === albumId)
-  const albumImages = mockImages.filter((img) => img.albumId === albumId)
+  const [albumImages, setAlbumImages] = useState(mockImages.filter((img) => img.albumId === albumId))
 
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [selectedImage, setSelectedImage] = useState<ImageType | null>(null)
   const [isImageModalOpen, setIsImageModalOpen] = useState(false)
-  const [currentView, setCurrentView] = useState<"photos" | "watermarked" | "settings">("photos")
+  const [currentView, setCurrentView] = useState<"photos" | "watermarked">("photos")
 
   if (!album) {
     return <div>Album not found</div>
@@ -33,51 +33,55 @@ export default function AlbumDetail() {
     setIsImageModalOpen(true)
   }
 
-  return (
-    <div className="container py-10 space-y-8">
-      <Breadcrumbs items={[{ label: "Albums", href: "/" }, { label: album.title }]} />
+  const handleUploadPhotos = (files: File[]) => {
+    // Create mock images from the uploaded files
+    const newImages = files.map((file, index) => ({
+      id: `img-${Date.now()}-${index}`,
+      albumId,
+      url: "/placeholder.svg", // In a real app, this would be the uploaded file URL
+      caption: file.name.split(".")[0], // Use filename as caption
+      createdAt: new Date().toISOString(),
+    }))
 
-      <div className="flex items-center gap-4">
+    setAlbumImages([...newImages, ...albumImages])
+  }
+
+  return (
+    <div className="container py-6 space-y-6">
+      <div className="flex items-center gap-2">
         <Link href="/">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
-        <h1 className="text-3xl font-bold">{album.title}</h1>
+        <h1 className="text-xl font-bold">{album.title}</h1>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <p className="text-muted-foreground">{album.description}</p>
+      <div className="flex items-center justify-between gap-4">
+        <p className="text-sm text-muted-foreground">{album.description}</p>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setIsShareModalOpen(true)}>
+          <Button size="sm" variant="outline" onClick={() => setIsShareModalOpen(true)}>
             <Share className="mr-2 h-4 w-4" />
-            Share Album
+            Share
           </Button>
           <Link href={`/shared/${albumId}`} target="_blank">
-            <Button variant="outline">
+            <Button size="sm" variant="outline">
               <Eye className="mr-2 h-4 w-4" />
-              Preview Client View
+              Preview
             </Button>
           </Link>
         </div>
       </div>
 
-      <Tabs
-        defaultValue="photos"
-        onValueChange={(value) => setCurrentView(value as "photos" | "watermarked" | "settings")}
-      >
+      <Tabs defaultValue="photos" onValueChange={(value) => setCurrentView(value as "photos" | "watermarked")}>
         <TabsList>
           <TabsTrigger value="photos">Photos</TabsTrigger>
-          <TabsTrigger value="watermarked">Watermarked Preview</TabsTrigger>
-          <TabsTrigger value="settings">
-            <Settings className="h-4 w-4 mr-2" />
-            Settings
-          </TabsTrigger>
+          <TabsTrigger value="watermarked">Watermarked</TabsTrigger>
         </TabsList>
         <TabsContent value="photos" className="pt-4">
           <div className="flex justify-between mb-4">
-            <h2 className="text-xl font-semibold">Album Photos</h2>
-            <Button>
+            <h2 className="text-lg font-medium">Album Photos</h2>
+            <Button size="sm" onClick={() => setIsUploadModalOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Add Photos
             </Button>
@@ -86,17 +90,9 @@ export default function AlbumDetail() {
         </TabsContent>
         <TabsContent value="watermarked" className="pt-4">
           <div className="mb-4">
-            <h2 className="text-xl font-semibold">Watermarked Preview</h2>
-            <p className="text-sm text-muted-foreground">This is how clients will see your photos</p>
+            <h2 className="text-lg font-medium">Watermarked Preview</h2>
           </div>
           <ImageGrid images={albumImages} watermarked={true} onImageClick={handleImageClick} />
-        </TabsContent>
-        <TabsContent value="settings" className="pt-4">
-          <div className="mb-4">
-            <h2 className="text-xl font-semibold">Album Settings</h2>
-            <p className="text-sm text-muted-foreground">Configure sharing and client permissions</p>
-          </div>
-          <AlbumSettings album={album} />
         </TabsContent>
       </Tabs>
 
@@ -110,6 +106,13 @@ export default function AlbumDetail() {
         watermarked={currentView === "watermarked"}
         isClientView={false}
         onNavigate={setSelectedImage}
+      />
+
+      <UploadPhotosModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        _albumId={albumId}
+        onUploadPhotos={handleUploadPhotos}
       />
     </div>
   )

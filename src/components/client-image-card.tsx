@@ -24,11 +24,11 @@ export function ClientImageCard({ image, onImageClick }: ClientImageCardProps) {
   }, [image.id])
 
   return (
-    <Card className={`overflow-hidden ${markedForDeletion ? "opacity-60" : ""}`}>
+    <Card className={`overflow-hidden py-0 ${markedForDeletion ? "opacity-60" : ""}`}>
       <div className="relative aspect-square cursor-pointer" onClick={() => onImageClick(image)}>
         <Image
-          src={image.url || "/placeholder.svg"}
-          alt={image.caption || "Album photo"}
+          src={image.url ?? "/placeholder.svg"}
+          alt={image.caption ?? "Album photo"}
           fill
           className="object-cover"
         />
@@ -37,34 +37,34 @@ export function ClientImageCard({ image, onImageClick }: ClientImageCardProps) {
         </div>
         {markedForDeletion && (
           <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-            <span className="text-white font-semibold px-3 py-1 bg-red-500 rounded-md">Marked for Deletion</span>
+            <span className="text-white text-xs font-semibold px-2 py-1 bg-red-500 rounded-md">Delete</span>
           </div>
         )}
         {commentCount > 0 && (
-          <div className="absolute top-2 right-2">
-            <Badge variant="secondary" className="flex items-center gap-1">
-              <MessageSquare className="h-3 w-3" />
+          <div className="absolute top-1 right-1">
+            <Badge variant="secondary" className="flex items-center gap-1 text-xs py-0 px-1.5">
+              <MessageSquare className="h-2.5 w-2.5" />
               {commentCount}
             </Badge>
           </div>
         )}
       </div>
-      <CardContent className="p-3">
-        <p className="text-sm truncate">{image.caption || "Untitled"}</p>
+      <CardContent className="p-3 py-0">
+        <p className="text-xs truncate">{image.caption ?? "Untitled"}</p>
       </CardContent>
-      <CardFooter className="flex justify-between p-3 pt-0">
-        <Button variant="outline" size="sm" onClick={() => onImageClick(image)}>
-          <MessageSquare className="h-4 w-4 mr-1" />
-          {commentCount > 0 ? `View Comments (${commentCount})` : "Add Comment"}
+      <CardFooter className="flex justify-between p-2 pt-0">
+        <Button variant="ghost" size="sm" className="text-xs h-7 px-2" onClick={() => onImageClick(image)}>
+          <MessageSquare className="h-3 w-3 mr-1" />
+          Comment
         </Button>
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
-          className={markedForDeletion ? "bg-red-100" : ""}
+          className={`text-xs h-7 px-2 ${markedForDeletion ? "text-red-500" : ""}`}
           onClick={() => setMarkedForDeletion(!markedForDeletion)}
         >
-          <Trash2 className="h-4 w-4 mr-1" />
-          {markedForDeletion ? "Undo" : "Mark for Deletion"}
+          <Trash2 className="h-3 w-3 mr-1" />
+          {markedForDeletion ? "Undo" : "Delete"}
         </Button>
       </CardFooter>
     </Card>
