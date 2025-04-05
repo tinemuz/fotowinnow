@@ -5,7 +5,7 @@ import { Button } from "~/components/ui/button"
 import { Textarea } from "~/components/ui/textarea"
 import { type Image as ImageType, type Comment as CommentType, mockComments } from "~/lib/data"
 import Image from "next/image"
-import { ChevronLeft, ChevronRight, MessageSquare, Trash2, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, MessageSquare, Trash2} from "lucide-react"
 import { useState, useEffect, useCallback } from "react"
 import { ScrollArea } from "~/components/ui/scroll-area"
 
@@ -104,7 +104,7 @@ export function ImageDetailModal({
       <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <div className="flex flex-col h-full">
           {/* Image Section - Fixed height */}
-          <div className="relative w-full h-[50vh] min-h-[400px] flex-shrink-0 flex items-center justify-center bg-black">
+          <div className="relative w-full h-[50vh] min-h-[400px] flex-shrink-0 flex items-center justify-center">
             <Button
               variant="ghost"
               size="icon"
@@ -123,15 +123,6 @@ export function ImageDetailModal({
               <ChevronRight className="h-6 w-6" />
             </Button>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-4 top-4 z-10 bg-black/20 hover:bg-black/40 text-white rounded-full h-10 w-10"
-              onClick={onClose}
-            >
-              <X className="h-5 w-5" />
-            </Button>
-
             <div className={`relative h-full w-full ${markedForDeletion ? "opacity-60" : ""}`}>
               <Image
                 src={image.url ?? "/placeholder.svg"}
@@ -147,32 +138,31 @@ export function ImageDetailModal({
                 </div>
               )}
               {markedForDeletion && (
-                <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                <div className="absolute inset-0 bg-opacity-40 flex items-center justify-center">
                   <span className="text-white font-semibold px-3 py-1 bg-red-500 rounded-md">Marked for Deletion</span>
                 </div>
               )}
-            </div>
-
-            <div className="absolute bottom-4 left-4 right-4 text-white bg-black/50 px-3 py-2 rounded-md text-sm">
-              {image.caption ?? "Untitled"}
             </div>
           </div>
 
           {/* Comments Section */}
           <div className="flex flex-col h-[40vh] min-h-[300px] border-t">
-            <div className="p-4 border-b flex justify-between items-center">
-              <h3 className="text-base font-medium">Comments</h3>
-              {isClientView && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={markedForDeletion ? "bg-red-100" : ""}
-                  onClick={() => setMarkedForDeletion(!markedForDeletion)}
-                >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  {markedForDeletion ? "Undo" : "Delete"}
-                </Button>
-              )}
+            <div className="p-4 border-b">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-base font-medium">Comments</h3>
+                {isClientView && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={markedForDeletion ? "bg-red-100" : ""}
+                    onClick={() => setMarkedForDeletion(!markedForDeletion)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    {markedForDeletion ? "Undo" : "Delete"}
+                  </Button>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground">{image.caption ?? "Untitled"}</p>
             </div>
 
             <div className="flex-1 overflow-hidden">
