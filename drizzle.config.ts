@@ -1,12 +1,11 @@
-import { type Config } from "drizzle-kit";
-
-import { env } from "~/env";
+import 'dotenv/config';
+import type { Config } from 'drizzle-kit';
 
 export default {
-  schema: "./src/server/db/schema.ts",
-  dialect: "postgresql",
+  out: './drizzle',
+  dialect: 'postgresql',
+  schema: './src/server/db/schema.ts',
   dbCredentials: {
-    url: env.DATABASE_URL,
+    url: process.env.DATABASE_URL!,
   },
-  tablesFilter: ["fotowinnow_*"],
-} satisfies Config;
+} as Config;
