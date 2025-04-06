@@ -11,7 +11,7 @@ import { index, sqliteTableCreator } from "drizzle-orm/sqlite-core";
  * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
  */
 export const createTable = sqliteTableCreator(
-  (name) => `fotowinnow-ag_${name}`,
+  (name) => `fotowinnow_${name}`,
 );
 
 export const posts = createTable(

@@ -1,19 +1,17 @@
-import { createClient, type Client } from "@libsql/client";
-import { drizzle } from "drizzle-orm/libsql";
-
-import { env } from "~/env";
-import * as schema from "./schema";
+import "dotenv/config";
+import { drizzle } from "drizzle-orm/neon-http";
+import { neon, neonConfig } from "@neondatabase/serverless";
 
 /**
  * Cache the database connection in development. This avoids creating a new connection on every HMR
  * update.
  */
-const globalForDb = globalThis as unknown as {
-  client: Client | undefined;
-};
+import ws from "ws";
 
-export const client =
-  globalForDb.client ?? createClient({ url: env.DATABASE_URL });
-if (env.NODE_ENV !== "production") globalForDb.client = client;
+neonConfig.webSocketConstructor = ws;
 
-export const db = drizzle(client, { schema });
+// To work in edge environments (Cloudflare Workers, Vercel Edge, etc.), enable querying over fetch
+neonConfig.poolQueryViaFetch = true
+
+const sql = neon(process.env.DATABASE_URL!);
+export const db = drizzle({ client: sql });
