@@ -2,8 +2,6 @@
 
 ## TODO
 
-- [] Set up database and data model
-- [] Move albums open state to url - update breadcrumbs
-- [] Authentication
-- [] Add image uploading
-
+- [x] Set up database and data model
+- [x] Authentication
+- [ ] Add image uploading
