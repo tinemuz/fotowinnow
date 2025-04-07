@@ -21,7 +21,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en" className={`${geist.variable}`}>
-      <body className={" flex w-full justify-center px-4"}>{children}</body>
+      <body className={" flex w-full flex-col items-center px-4"}>{children}</body>
       </html>
     </ClerkProvider>
   );
