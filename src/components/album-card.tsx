@@ -1,50 +1,80 @@
-import { Card, CardContent, CardFooter, CardHeader } from "~/components/ui/card"
-import type { Album } from "~/lib/data"
+"use client"
+
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "~/components/ui/card"
+import { Button } from "~/components/ui/button"
+import { Share2, Lock } from "lucide-react"
+import type { Album } from "~/lib/types"
+import { useRouter } from "next/navigation"
 import Image from "next/image"
-import { Badge } from "~/components/ui/badge"
-import { Calendar, ImageIcon } from "lucide-react"
-import Link from "next/link"
 
 interface AlbumCardProps {
   album: Album
 }
 
 export function AlbumCard({ album }: AlbumCardProps) {
+  const router = useRouter()
+
+  const handleViewAlbum = () => {
+    router.push(`/albums/${album.id}`)
+  }
+
   return (
-    <Link href={`/albums/${album.id}`}>
-      <Card className="overflow-hidden hover:shadow-md transition-shadow py-0">
-        <div className="relative h-40 w-full">
-          {album.coverImage ? (
-            <Image src={album.coverImage || "/placeholder.svg"} alt={album.title} fill className="object-cover" />
+    <Card className="overflow-hidden">
+      <div
+        className="relative aspect-video w-full cursor-pointer bg-muted"
+        onClick={handleViewAlbum}
+      >
+        {album.coverImage ? (
+          <Image
+            src={album.coverImage}
+            alt={album.title}
+            fill
+            style={{ objectFit: "cover" }}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <p className="text-muted-foreground">No cover image</p>
+          </div>
+        )}
+      </div>
+
+      <CardHeader>
+        <CardTitle className="line-clamp-1">{album.title}</CardTitle>
+      </CardHeader>
+
+      <CardContent>
+        <p className="text-sm text-muted-foreground line-clamp-2">
+          {album.description ?? "No description"}
+        </p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          By {album.photographerName ?? "Unknown photographer"}
+        </p>
+      </CardContent>
+
+      <CardFooter className="flex justify-between">
+        <Button variant="ghost" size="sm">
+          {album.isShared ? (
+            <>
+              <Share2 className="mr-2 h-4 w-4" />
+              Shared
+            </>
           ) : (
-            <div className="h-full w-full flex items-center justify-center bg-muted">
-              <ImageIcon className="h-10 w-10 text-muted-foreground" />
-            </div>
+            <>
+              <Lock className="mr-2 h-4 w-4" />
+              Private
+            </>
           )}
-        </div>
-        <CardHeader className="">
-          <div className="flex justify-between items-start">
-            <h3 className="font-medium text-base">{album.title}</h3>
-            <Badge variant={album.isShared ? "default" : "outline"} className="text-xs">
-              {album.isShared ? "Shared" : "Draft"}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="">
-          <p className="text-xs text-muted-foreground line-clamp-1">{album.description}</p>
-        </CardContent>
-        <CardFooter className="text-xs text-muted-foreground p-3 pt-0 flex justify-between">
-          <div className="flex items-center">
-            <ImageIcon className="h-3 w-3 mr-1" />
-            {album.imageCount} photos
-          </div>
-          <div className="flex items-center">
-            <Calendar className="h-3 w-3 mr-1" />
-            {new Date(album.createdAt).toLocaleDateString()}
-          </div>
-        </CardFooter>
-      </Card>
-    </Link>
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleViewAlbum}
+        >
+          View Album
+        </Button>
+      </CardFooter>
+    </Card>
   )
 }
 

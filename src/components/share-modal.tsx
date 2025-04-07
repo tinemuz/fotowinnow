@@ -5,16 +5,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/u
 import { Input } from "~/components/ui/input"
 import { Copy, Check } from "lucide-react"
 import { useState } from "react"
+import { type Album } from "~/lib/types"
 
 interface ShareModalProps {
   isOpen: boolean
   onClose: () => void
-  albumId: string
+  album: Album
 }
 
-export function ShareModal({ isOpen, onClose, albumId }: ShareModalProps) {
+export function ShareModal({ isOpen, onClose, album }: ShareModalProps) {
   const [copied, setCopied] = useState(false)
-  const shareUrl = `${window.location.origin}/shared/${albumId}`
+  const shareUrl = `${window.location.origin}/shared/${album.id}`
 
   const copyToClipboard = async () => {
     try {

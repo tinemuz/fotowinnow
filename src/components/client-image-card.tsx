@@ -1,11 +1,11 @@
 "use client"
 
 import { Card, CardContent, CardFooter } from "~/components/ui/card"
-import { type Image as ImageType, mockComments } from "~/lib/data"
-import Image from "next/image"
+import { type Image as ImageType } from "~/lib/types"
+import NextImage from "next/image"
 import { Button } from "~/components/ui/button"
 import { MessageSquare, Trash2 } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Badge } from "~/components/ui/badge"
 
 interface ClientImageCardProps {
@@ -15,18 +15,13 @@ interface ClientImageCardProps {
 
 export function ClientImageCard({ image, onImageClick }: ClientImageCardProps) {
   const [markedForDeletion, setMarkedForDeletion] = useState(false)
-  const [commentCount, setCommentCount] = useState(0)
-
-  useEffect(() => {
-    // In a real app, you would fetch this from an API
-    const imageComments = mockComments.filter((comment) => comment.imageId === image.id)
-    setCommentCount(imageComments.length)
-  }, [image.id])
+  // For now, we'll use a placeholder comment count since we haven't implemented comments yet
+  const commentCount = 0
 
   return (
     <Card className={`overflow-hidden py-0 ${markedForDeletion ? "opacity-60" : ""}`}>
       <div className="relative aspect-square cursor-pointer" onClick={() => onImageClick(image)}>
-        <Image
+        <NextImage
           src={image.url ?? "/placeholder.svg"}
           alt={image.caption ?? "Album photo"}
           fill

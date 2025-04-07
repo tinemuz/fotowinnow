@@ -8,7 +8,7 @@ import { Input } from "~/components/ui/input"
 import { Label } from "~/components/ui/label"
 import { ImagePlus, X } from "lucide-react"
 import { useState, useRef } from "react"
-import Image from "next/image"
+import NextImage from "next/image"
 
 interface UploadPhotosModalProps {
   isOpen: boolean
@@ -95,7 +95,7 @@ export function UploadPhotosModal({ isOpen, onClose, _albumId, onUploadPhotos }:
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                 {previews.map((preview, index) => (
                   <div key={index} className="relative aspect-square rounded-md overflow-hidden border">
-                    <Image
+                    <NextImage
                       src={preview || "/placeholder.svg"}
                       alt={`Preview ${index + 1}`}
                       fill
