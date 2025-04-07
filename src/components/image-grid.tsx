@@ -1,8 +1,8 @@
 "use client"
 
 import { Card, CardContent } from "~/components/ui/card"
-import type { Image as ImageType } from "~/lib/data"
-import Image from "next/image"
+import type { Image as ImageType } from "~/lib/types"
+import NextImage from "next/image"
 import { MoreHorizontal } from "lucide-react"
 import { Button } from "~/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "~/components/ui/dropdown-menu"
@@ -20,7 +20,7 @@ export function ImageGrid({ images, watermarked, clientView = false, onImageClic
       {images.map((image) => (
         <Card key={image.id} className="overflow-hidden py-0">
           <div className="relative aspect-square cursor-pointer" onClick={() => onImageClick(image)}>
-            <Image
+            <NextImage
               src={image.url ?? "/placeholder.svg"}
               alt={image.caption ?? "Album photo"}
               fill

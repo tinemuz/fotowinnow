@@ -3,11 +3,12 @@
 import { Dialog, DialogContent } from "~/components/ui/dialog"
 import { Button } from "~/components/ui/button"
 import { Textarea } from "~/components/ui/textarea"
-import { type Image as ImageType, type Comment as CommentType, mockComments } from "~/lib/data"
-import Image from "next/image"
+import { type Image as ImageType, type Comment } from "~/lib/types"
+import NextImage from "next/image"
 import { ChevronLeft, ChevronRight, MessageSquare, Trash2} from "lucide-react"
 import { useState, useEffect, useCallback } from "react"
 import { ScrollArea } from "~/components/ui/scroll-area"
+import { fetchImageComments, createComment } from "~/lib/api"
 
 interface ImageDetailModalProps {
   image: ImageType | null
@@ -29,32 +30,53 @@ export function ImageDetailModal({
   onNavigate,
 }: ImageDetailModalProps) {
   const [newComment, setNewComment] = useState("")
-  const [comments, setComments] = useState<CommentType[]>([])
+  const [comments, setComments] = useState<Comment[]>([])
   const [markedForDeletion, setMarkedForDeletion] = useState(false)
   const [isAddingComment, setIsAddingComment] = useState(false)
+  const [isLoadingComments, setIsLoadingComments] = useState(false)
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false)
 
   useEffect(() => {
-    if (image) {
-      // In a real app, you would fetch comments from an API
-      const imageComments = mockComments.filter((comment) => comment.imageId === image.id)
-      setComments(imageComments)
-      setMarkedForDeletion(false)
+    const loadComments = async () => {
+      if (!image) return
+      
+      try {
+        setIsLoadingComments(true)
+        setComments([]) // Reset comments when loading new image
+        const imageComments = await fetchImageComments(image.id)
+        console.log('Loading comments for image:', image.id)
+        console.log('Loaded comments:', imageComments)
+        setComments(imageComments)
+      } catch (error) {
+        console.error("Failed to load comments:", error)
+      } finally {
+        setIsLoadingComments(false)
+      }
     }
-  }, [image])
 
-  const handleAddComment = () => {
-    if (newComment.trim() && image) {
-      const newCommentObj: CommentType = {
-        id: `comment-${Date.now()}`,
-        imageId: image.id,
+    void loadComments()
+    setMarkedForDeletion(false)
+    setNewComment("") // Reset new comment input when image changes
+    setIsAddingComment(false) // Close comment input when image changes
+  }, [image]) // Add image to dependency array
+
+  const handleAddComment = async () => {
+    if (!newComment.trim() || !image) return
+
+    try {
+      setIsSubmittingComment(true)
+      const newCommentObj = await createComment(image.id, {
         text: newComment,
         author: isClientView ? "Client" : "Photographer",
-        createdAt: new Date().toISOString(),
-      }
+      })
 
       setComments([...comments, newCommentObj])
       setNewComment("")
       setIsAddingComment(false)
+    } catch (error) {
+      console.error("Failed to add comment:", error)
+    } finally {
+      setIsSubmittingComment(false)
     }
   }
 
@@ -124,7 +146,7 @@ export function ImageDetailModal({
             </Button>
 
             <div className={`relative h-full w-full ${markedForDeletion ? "opacity-60" : ""}`}>
-              <Image
+              <NextImage
                 src={image.url ?? "/placeholder.svg"}
                 alt={image.caption ?? "Image"}
                 fill
@@ -167,7 +189,9 @@ export function ImageDetailModal({
 
             <div className="flex-1 overflow-hidden">
               <ScrollArea className="h-full p-4">
-                {comments.length > 0 ? (
+                {isLoadingComments ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">Loading comments...</p>
+                ) : comments.length > 0 ? (
                   <div className="space-y-4">
                     {comments.map((comment) => (
                       <div key={comment.id} className="text-sm border-b pb-3">
@@ -197,23 +221,25 @@ export function ImageDetailModal({
                     className="min-h-[100px] text-sm"
                   />
                   <div className="flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setIsAddingComment(false)
-                        setNewComment("")
-                      }}
-                    >
+                    <Button variant="outline" size="sm" onClick={() => setIsAddingComment(false)}>
                       Cancel
                     </Button>
-                    <Button size="sm" onClick={handleAddComment}>
-                      Add
+                    <Button 
+                      size="sm" 
+                      onClick={handleAddComment}
+                      disabled={isSubmittingComment || !newComment.trim()}
+                    >
+                      {isSubmittingComment ? "Adding..." : "Add Comment"}
                     </Button>
                   </div>
                 </div>
               ) : (
-                <Button variant="outline" className="w-full text-sm" size="sm" onClick={() => setIsAddingComment(true)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => setIsAddingComment(true)}
+                >
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Add Comment
                 </Button>
