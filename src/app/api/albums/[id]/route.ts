@@ -84,13 +84,13 @@ interface PatchAlbumRequestBody {
     title?: string
     description?: string
     watermarkText?: string
-    watermarkQuality?: number
+    watermarkQuality?: "512p" | "1080p" | "2K" | "4K"
     watermarkOpacity?: number
 }
 
 export async function PATCH(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         // Get the authenticated user's ID
@@ -117,7 +117,7 @@ export async function PATCH(
         }
 
         const photographerId = photographerResult[0]!.id;
-        const albumId = parseInt(params.id, 10);
+        const albumId = parseInt((await params).id, 10);
 
         if (isNaN(albumId)) {
             return NextResponse.json(

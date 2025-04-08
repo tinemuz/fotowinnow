@@ -16,7 +16,7 @@ export interface Album {
     photographerId: string;
     photographerName?: string;
     watermarkText?: string;
-    watermarkQuality?: number;
+    watermarkQuality?: "512p" | "1080p" | "2K" | "4K";
     watermarkOpacity?: number;
 }
 

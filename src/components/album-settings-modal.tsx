@@ -8,6 +8,7 @@ import { Input } from "~/components/ui/input"
 import { Label } from "~/components/ui/label"
 import { Textarea } from "~/components/ui/textarea"
 import { Slider } from "~/components/ui/slider"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select"
 import type { Album } from "~/lib/types"
 
 interface AlbumSettingsModalProps {
@@ -18,16 +19,18 @@ interface AlbumSettingsModalProps {
     title: string
     description: string
     watermarkText: string
-    watermarkQuality: number
+    watermarkQuality: "512p" | "1080p" | "2K" | "4K"
     watermarkOpacity: number
   }) => Promise<void>
 }
+
+const QUALITY_OPTIONS = ["512p", "1080p", "2K", "4K"] as const;
 
 export function AlbumSettingsModal({ isOpen, onClose, album, onSave }: AlbumSettingsModalProps) {
   const [title, setTitle] = useState(album.title)
   const [description, setDescription] = useState(album.description ?? "")
   const [watermarkText, setWatermarkText] = useState(album.watermarkText ?? "fotowinnow")
-  const [watermarkQuality, setWatermarkQuality] = useState(album.watermarkQuality ?? 80)
+  const [watermarkQuality, setWatermarkQuality] = useState<"512p" | "1080p" | "2K" | "4K">(album.watermarkQuality ?? "1080p")
   const [watermarkOpacity, setWatermarkOpacity] = useState(album.watermarkOpacity ?? 30)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -98,22 +101,19 @@ export function AlbumSettingsModal({ isOpen, onClose, album, onSave }: AlbumSett
           </div>
 
           <div className="space-y-2">
-            <div className="flex justify-between">
-              <Label htmlFor="watermark-quality">Image Quality</Label>
-              <span className="text-sm text-muted-foreground">{watermarkQuality}%</span>
-            </div>
-            <Slider
-              id="watermark-quality"
-              min={10}
-              max={100}
-              step={5}
-              value={[watermarkQuality]}
-              onValueChange={(values: number[]) => {
-                if (values[0] !== undefined) {
-                  setWatermarkQuality(values[0])
-                }
-              }}
-            />
+            <Label htmlFor="watermark-quality">Image Quality</Label>
+            <Select value={watermarkQuality} onValueChange={(value: "512p" | "1080p" | "2K" | "4K") => setWatermarkQuality(value)}>
+              <SelectTrigger id="watermark-quality">
+                <SelectValue placeholder="Select quality" />
+              </SelectTrigger>
+              <SelectContent>
+                {QUALITY_OPTIONS.map((quality) => (
+                  <SelectItem key={quality} value={quality}>
+                    {quality}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
