@@ -140,4 +140,27 @@ export async function updateSharedAlbumSelections(
         throw new Error(`Failed to update selections for shared album ${shareId}`);
     }
     return response.json() as Promise<{ success: boolean }>;
+}
+
+export async function updateAlbumSettings(
+    albumId: number,
+    settings: {
+        title: string
+        description: string
+        watermarkText: string
+        watermarkQuality: number
+        watermarkOpacity: number
+    }
+): Promise<Album> {
+    const response = await fetch(`${API_BASE_URL}/albums/${albumId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings),
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to update album settings ${albumId}`);
+    }
+
+    return response.json() as Promise<Album>;
 } 

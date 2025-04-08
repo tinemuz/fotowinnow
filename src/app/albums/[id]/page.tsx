@@ -8,10 +8,11 @@ import { ImageGrid } from "~/components/image-grid"
 import { ShareModal } from "~/components/share-modal"
 import { ImageDetailModal } from "~/components/image-detail-modal"
 import { type Album, type Image as ImageType } from "~/lib/types"
-import { fetchAlbumById, fetchAlbumImages, createImage } from "~/lib/api"
-import { Upload } from "lucide-react"
+import { fetchAlbumById, fetchAlbumImages, createImage, updateAlbumSettings } from "~/lib/api"
+import { Upload, Share2, Settings } from "lucide-react"
 import { UploadPhotosModal } from "~/components/upload-photos-modal"
 import { NavBar } from "~/components/nav-bar"
+import { AlbumSettingsModal } from "~/components/album-settings-modal"
 
 export default function AlbumDetail() {
   const params = useParams()
@@ -24,6 +25,7 @@ export default function AlbumDetail() {
   const [selectedImage, setSelectedImage] = useState<ImageType | null>(null)
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
   const [currentView, setCurrentView] = useState<"photos" | "watermarked">("photos")
 
   useEffect(() => {
@@ -70,6 +72,22 @@ export default function AlbumDetail() {
     }
   }
 
+  const handleSettingsSave = async (settings: {
+    title: string
+    description: string
+    watermarkText: string
+    watermarkQuality: number
+    watermarkOpacity: number
+  }) => {
+    try {
+      const updatedAlbum = await updateAlbumSettings(albumId, settings)
+      setAlbum(updatedAlbum)
+    } catch (err) {
+      console.error("Failed to save settings:", err)
+      throw err
+    }
+  }
+
   if (isLoading) {
     return (
       <>
@@ -109,7 +127,12 @@ export default function AlbumDetail() {
         <div className="flex justify-end mb-8">
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setIsShareModalOpen(true)}>
+              <Share2 className="h-4 w-4 mr-2" />
               Share
+            </Button>
+            <Button variant="outline" onClick={() => setIsSettingsModalOpen(true)}>
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
             </Button>
             <Button onClick={() => setIsUploadModalOpen(true)}>
               <Upload className="h-4 w-4 mr-2" />
@@ -143,6 +166,13 @@ export default function AlbumDetail() {
           isOpen={isShareModalOpen}
           onClose={() => setIsShareModalOpen(false)}
           album={album}
+        />
+
+        <AlbumSettingsModal
+          isOpen={isSettingsModalOpen}
+          onClose={() => setIsSettingsModalOpen(false)}
+          album={album}
+          onSave={handleSettingsSave}
         />
 
         <ImageDetailModal

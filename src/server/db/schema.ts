@@ -53,6 +53,9 @@ export const albums = pgTable(
     photographerId: integer("photographer_id")
       .references(() => photographers.id)
       .notNull(),
+    watermarkText: text("watermark_text").default("fotowinnow"),
+    watermarkQuality: text("watermark_quality").default("1080"),
+    watermarkOpacity: integer("watermark_opacity").default(30),
   },
   (t) => [
     index("album_title_idx").on(t.title),

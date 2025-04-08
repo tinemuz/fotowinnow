@@ -15,6 +15,9 @@ export interface Album {
     isShared: boolean;
     photographerId: string;
     photographerName?: string;
+    watermarkText?: string;
+    watermarkQuality?: number;
+    watermarkOpacity?: number;
 }
 
 export interface Image {

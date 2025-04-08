@@ -106,9 +106,12 @@ export async function POST(request: NextRequest) {
             createdAt: new Date(),
             updatedAt: new Date(),
             photographerId,
-        };
+            // Watermark fields will be added by the migration with defaults
+        } as const;
 
-        const insertedAlbums: { id: number }[] = await db.insert(albums).values(newAlbumData).returning({ id: albums.id });
+        const insertedAlbums: { id: number }[] = await db.insert(albums)
+            .values(newAlbumData)
+            .returning({ id: albums.id });
 
         if (!insertedAlbums || insertedAlbums.length === 0) {
             return NextResponse.json(

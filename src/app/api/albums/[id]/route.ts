@@ -80,4 +80,109 @@ export async function GET(
     }
 }
 
+interface PatchAlbumRequestBody {
+    title?: string
+    description?: string
+    watermarkText?: string
+    watermarkQuality?: number
+    watermarkOpacity?: number
+}
+
+export async function PATCH(
+    request: NextRequest,
+    { params }: { params: { id: string } }
+) {
+    try {
+        // Get the authenticated user's ID
+        const { userId } = await auth();
+        if (!userId) {
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 }
+            );
+        }
+
+        // First get the photographer ID from our database
+        const photographerResult = await db
+            .select({ id: photographers.id })
+            .from(photographers)
+            .where(eq(photographers.clerkId, userId))
+            .limit(1);
+
+        if (!photographerResult.length) {
+            return NextResponse.json(
+                { error: "Photographer not found" },
+                { status: 404 }
+            );
+        }
+
+        const photographerId = photographerResult[0]!.id;
+        const albumId = parseInt(params.id, 10);
+
+        if (isNaN(albumId)) {
+            return NextResponse.json(
+                { error: "Invalid album ID" },
+                { status: 400 }
+            );
+        }
+
+        // Verify album ownership
+        const albumResult = await db
+            .select({ id: albums.id })
+            .from(albums)
+            .where(
+                and(
+                    eq(albums.id, albumId),
+                    eq(albums.photographerId, photographerId)
+                )
+            )
+            .limit(1);
+
+        if (!albumResult.length) {
+            return NextResponse.json(
+                { error: "Album not found" },
+                { status: 404 }
+            );
+        }
+
+        const body = await request.json() as PatchAlbumRequestBody;
+
+        // Update album settings
+        const updatedAlbum = await db
+            .update(albums)
+            .set({
+                ...(body.title && { title: body.title }),
+                ...(body.description !== undefined && { description: body.description }),
+                ...(body.watermarkText !== undefined && { watermarkText: body.watermarkText }),
+                ...(body.watermarkQuality !== undefined && { watermarkQuality: body.watermarkQuality }),
+                ...(body.watermarkOpacity !== undefined && { watermarkOpacity: body.watermarkOpacity }),
+                updatedAt: new Date(),
+            })
+            .where(eq(albums.id, albumId))
+            .returning({
+                id: albums.id,
+                title: albums.title,
+                description: albums.description,
+                watermarkText: albums.watermarkText,
+                watermarkQuality: albums.watermarkQuality,
+                watermarkOpacity: albums.watermarkOpacity,
+            });
+
+        if (!updatedAlbum.length) {
+            return NextResponse.json(
+                { error: "Failed to update album" },
+                { status: 500 }
+            );
+        }
+
+        return NextResponse.json(updatedAlbum[0]);
+    } catch (error) {
+        console.error("Error updating album:", error);
+        return NextResponse.json(
+            { error: "Failed to update album" },
+            { status: 500 }
+        );
+    }
+}
+
 export const dynamic = 'force-dynamic' 
