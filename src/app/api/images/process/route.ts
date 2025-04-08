@@ -227,8 +227,9 @@ export async function POST(req: NextRequest) {
         const charWidth = Math.round(baseCharWidth * scaleFactor);
         const watermarkWidth = watermark.length * charWidth;
 
-        const horizontalSpacing = 2 * charWidth;
-        const verticalSpacing = 2 * charWidth;
+        // Increase horizontal spacing to 4 characters while keeping vertical at 2
+        const horizontalSpacing = 4 * charWidth; // Increased from 2 to 4
+        const verticalSpacing = 2 * charWidth;  // Keep vertical spacing the same
 
         const totalHorizontalSpace = watermarkWidth + horizontalSpacing;
         const totalVerticalSpace = fontSize + verticalSpacing;
@@ -236,19 +237,19 @@ export async function POST(req: NextRequest) {
         // Calculate diagonal length with extra padding to ensure full coverage
         const diagonalLength = Math.ceil(Math.sqrt(
             (newWidth * newWidth) + (newHeight * newHeight)
-        )) + Math.max(totalHorizontalSpace, totalVerticalSpace) * 2; // Add padding of one full watermark unit
+        )) + Math.max(totalHorizontalSpace, totalVerticalSpace) * 2;
 
         // Increase the number of rows and columns to ensure full coverage
-        const numCols = Math.ceil(diagonalLength / totalHorizontalSpace) + 4; // Added extra columns
-        const numRows = Math.ceil(diagonalLength / totalVerticalSpace) + 4; // Added extra rows
+        const numCols = Math.ceil(diagonalLength / totalHorizontalSpace) + 4;
+        const numRows = Math.ceil(diagonalLength / totalVerticalSpace) + 4;
 
         console.log('Watermark pattern calculations:', {
             targetDimensions,
             scaleFactor,
             charWidth,
             watermarkWidth,
-            horizontalSpacing,
-            verticalSpacing,
+            horizontalSpacing: `${4} chars (${horizontalSpacing}px)`, // Updated log
+            verticalSpacing: `${2} chars (${verticalSpacing}px)`,
             totalHorizontalSpace,
             totalVerticalSpace,
             diagonalLength,
