@@ -73,9 +73,7 @@ export async function GET(
         }
 
         // Set cache control headers (private since it's user-specific)
-        headers.set('Cache-Control', 'private, max-age=3600'); // Cache for 1 hour 
-        // Remove Access-Control-Allow-Origin, not needed for same-origin requests and potentially insecure
-        // headers.set('Access-Control-Allow-Origin', '*'); 
+        headers.set('Cache-Control', 'private, max-age=3600'); // Cache for 1 hour
 
         console.log('Streaming image back to client:', { fullKey });
         // Convert the readable stream to a Response

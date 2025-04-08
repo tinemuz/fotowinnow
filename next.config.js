@@ -7,6 +7,7 @@ import "./src/env.js";
 /** @type {import("next").NextConfig} */
 const config = {
   images: {
+    unoptimized: true, // Disable Vercel's image optimization
     remotePatterns: [
       {
         protocol: 'https',
