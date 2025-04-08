@@ -60,7 +60,12 @@ export async function GET(
 
         // 3. Verify album ownership
         const albumResults = await db
-            .select({ id: albums.id, isShared: albums.isShared, photographerId: albums.photographerId })
+            .select({
+                id: albums.id,
+                isShared: albums.isShared,
+                photographerId: albums.photographerId,
+                title: albums.title,
+            })
             .from(albums)
             .where(eq(albums.id, albumId))
             .limit(1);
@@ -145,7 +150,11 @@ export async function POST(
 
         // Verify album ownership
         const albumResults = await db
-            .select({ id: albums.id, photographerId: albums.photographerId })
+            .select({
+                id: albums.id,
+                photographerId: albums.photographerId,
+                title: albums.title,
+            })
             .from(albums)
             .where(eq(albums.id, albumId))
             .limit(1);
@@ -175,10 +184,56 @@ export async function POST(
             );
         }
 
+        // Process the image to create optimized and watermarked versions
+        console.log('Initiating image processing request:', {
+            origin: request.nextUrl.origin,
+            imageKey: url.replace('/api/images/', ''),
+            watermark: `© ${album.title}`
+        });
+
+        const processResponse = await fetch(`${request.nextUrl.origin}/api/images/process`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': request.headers.get('Authorization') ?? '',
+                'Cookie': request.headers.get('Cookie') ?? ''
+            },
+            body: JSON.stringify({
+                key: url.replace('/api/images/', ''),
+                watermark: `© ${album.title}`,
+            }),
+        });
+
+        console.log('Image processing response:', {
+            status: processResponse.status,
+            ok: processResponse.ok,
+            statusText: processResponse.statusText
+        });
+
+        if (!processResponse.ok) {
+            const errorText = await processResponse.text();
+            console.error('Failed to process image:', {
+                status: processResponse.status,
+                error: errorText,
+                headers: Object.fromEntries(processResponse.headers.entries())
+            });
+            return NextResponse.json(
+                { error: "Failed to process image" },
+                { status: 500 }
+            );
+        }
+
+        const processResult = await processResponse.json() as { optimizedUrl: string; watermarkedUrl: string };
+        console.log('Image processing successful:', processResult);
+
+        const { optimizedUrl, watermarkedUrl } = processResult;
+
         // 4. Prepare Image Data
         const newImageData = {
             albumId,
             url: url,
+            optimizedUrl,
+            watermarkedUrl,
             caption: caption ?? null,
         };
         console.log('Preparing to insert image record:', newImageData);

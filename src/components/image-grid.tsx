@@ -21,12 +21,12 @@ export function ImageGrid({ images, watermarked, clientView = false, onImageClic
         <Card key={image.id} className="overflow-hidden py-0">
           <div className="relative aspect-square cursor-pointer" onClick={() => onImageClick(image)}>
             <NextImage
-              src={image.url ?? "/placeholder.svg"}
+              src={watermarked ? (image.watermarkedUrl ?? "/placeholder.svg") : (image.optimizedUrl ?? "/placeholder.svg")}
               alt={image.caption ?? "Album photo"}
               fill
               className="object-cover"
             />
-            {watermarked && (
+            {watermarked && !image.watermarkedUrl && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="text-white text-opacity-30 text-xl font-bold rotate-[-45deg] select-none">
                   WATERMARK

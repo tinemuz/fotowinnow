@@ -21,6 +21,8 @@ export interface Image {
     id: number;
     albumId: number;
     url: string;
+    optimizedUrl: string;
+    watermarkedUrl: string;
     caption: string | null;
     createdAt: Date;
     updatedAt: Date;

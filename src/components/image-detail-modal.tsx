@@ -147,12 +147,12 @@ export function ImageDetailModal({
 
             <div className={`relative h-full w-full ${markedForDeletion ? "opacity-60" : ""}`}>
               <NextImage
-                src={image.url ?? "/placeholder.svg"}
+                src={watermarked ? (image.watermarkedUrl ?? "/placeholder.svg") : (image.optimizedUrl ?? "/placeholder.svg")}
                 alt={image.caption ?? "Image"}
                 fill
                 className="object-contain"
               />
-              {watermarked && (
+              {watermarked && !image.watermarkedUrl && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div className="text-white text-opacity-30 text-3xl font-bold rotate-[-45deg] select-none">
                     WATERMARK

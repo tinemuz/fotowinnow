@@ -22,14 +22,16 @@ export function ClientImageCard({ image, onImageClick }: ClientImageCardProps) {
     <Card className={`overflow-hidden py-0 ${markedForDeletion ? "opacity-60" : ""}`}>
       <div className="relative aspect-square cursor-pointer" onClick={() => onImageClick(image)}>
         <NextImage
-          src={image.url ?? "/placeholder.svg"}
+          src={image.watermarkedUrl ?? "/placeholder.svg"}
           alt={image.caption ?? "Album photo"}
           fill
           className="object-cover"
         />
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="text-white text-opacity-30 text-xl font-bold rotate-[-45deg] select-none">WATERMARK</div>
-        </div>
+        {!image.watermarkedUrl && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="text-white text-opacity-30 text-xl font-bold rotate-[-45deg] select-none">WATERMARK</div>
+          </div>
+        )}
         {markedForDeletion && (
           <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
             <span className="text-white text-xs font-semibold px-2 py-1 bg-red-500 rounded-md">Delete</span>

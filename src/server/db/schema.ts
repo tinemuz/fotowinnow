@@ -67,6 +67,8 @@ export const images = pgTable(
     id: serial("id").primaryKey(),
     albumId: integer("album_id").references(() => albums.id).notNull(),
     url: text("url").notNull(),
+    optimizedUrl: text("optimized_url").notNull(),
+    watermarkedUrl: text("watermarked_url").notNull(),
     caption: text("caption"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),

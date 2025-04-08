@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 
@@ -14,7 +13,7 @@ const s3Client = new S3Client({
 
 export async function GET(
     _request: Request,
-    { params }: { params: Promise<{ id: string; key: string }> }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         // 1. Authenticate the user
@@ -24,7 +23,7 @@ export async function GET(
         }
 
         // 2. Await the params
-        const { id, key: _key } = await params;
+        const { id } = await params;
 
         // 3. Get the file from R2
         const command = new GetObjectCommand({

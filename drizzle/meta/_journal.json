@@ -15,6 +15,13 @@
       "when": 1744108636727,
       "tag": "0001_left_susan_delgado",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1744116178622,
+      "tag": "0002_neat_sunspot",
+      "breakpoints": true
     }
   ]
 }
