@@ -4,7 +4,6 @@ import { auth } from "@clerk/nextjs/server";
 import sharp from "sharp";
 import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { v4 as uuidv4 } from 'uuid';
-import path from 'path';
 import {
     Cutive_Mono,
     IBM_Plex_Mono,
@@ -13,6 +12,7 @@ import {
     Source_Code_Pro,
     Space_Mono
 } from "next/font/google";
+import * as path from "node:path";
 
 // Environment variable validation
 if (!process.env.R2_ENDPOINT) throw new Error('R2_ENDPOINT is required');
@@ -35,6 +35,15 @@ if (process.env.NODE_ENV === 'production') {
 
 // Disable sharp cache for serverless environment
 sharp.cache(false);
+
+// Configure font paths
+path.resolve(process.cwd(), 'fonts', 'fonts.conf');
+path.resolve(process.cwd(), 'fonts', 'CutiveMono-Regular.ttf');
+path.resolve(process.cwd(), 'fonts', 'IBMPlexMono-Regular.ttf');
+path.resolve(process.cwd(), 'fonts', 'JetBrainsMono-Regular.ttf');
+path.resolve(process.cwd(), 'fonts', 'RobotoMono-Regular.ttf');
+path.resolve(process.cwd(), 'fonts', 'SourceCodePro-Regular.ttf');
+path.resolve(process.cwd(), 'fonts', 'SpaceMono-Regular.ttf');
 
 // Load fonts
 const spaceMono = Space_Mono({ weight: '400', subsets: ['latin'] });
