@@ -39,7 +39,7 @@ export const albums = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
     isShared: boolean("is_shared").default(false).notNull(),
-    photographerId: integer("photographer_id").references(() => photographers.id),
+    photographerId: text("photographer_id").notNull(),
   },
   (t) => [
     index("album_title_idx").on(t.title),

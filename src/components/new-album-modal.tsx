@@ -33,7 +33,7 @@ export function NewAlbumModal({ isOpen, onClose, onAlbumCreated }: NewAlbumModal
         title,
         description,
         coverImage: "",
-        photographerId: 0
+        photographerId: "0"
       })
       setTitle("")
       setDescription("")

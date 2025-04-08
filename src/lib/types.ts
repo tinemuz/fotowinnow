@@ -13,7 +13,7 @@ export interface Album {
     createdAt: Date;
     updatedAt: Date;
     isShared: boolean;
-    photographerId: number | null;
+    photographerId: string;
     photographerName?: string;
 }
 
