@@ -7,6 +7,31 @@ import { auth } from "@clerk/nextjs/server";
 
 export async function GET(_request: NextRequest) {
     try {
+        // Get the authenticated user's ID
+        const { userId } = await auth();
+        if (!userId) {
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 }
+            );
+        }
+
+        // First get the photographer ID from our database
+        const photographerResult = await db
+            .select({ id: photographers.id })
+            .from(photographers)
+            .where(eq(photographers.clerkId, userId))
+            .limit(1);
+
+        if (!photographerResult.length) {
+            return NextResponse.json(
+                { error: "Photographer not found" },
+                { status: 404 }
+            );
+        }
+
+        const photographerId = photographerResult[0]!.id;
+
         const allAlbums = await db
             .select({
                 id: albums.id,
@@ -16,10 +41,9 @@ export async function GET(_request: NextRequest) {
                 createdAt: albums.createdAt,
                 isShared: albums.isShared,
                 photographerId: albums.photographerId,
-                photographerName: photographers.name,
             })
             .from(albums)
-            .leftJoin(photographers, eq(albums.photographerId, photographers.id));
+            .where(eq(albums.photographerId, photographerId));
 
         return NextResponse.json(allAlbums);
     } catch (error) {
@@ -47,6 +71,22 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Get photographer ID from our database
+        const photographerResult = await db
+            .select({ id: photographers.id })
+            .from(photographers)
+            .where(eq(photographers.clerkId, userId))
+            .limit(1);
+
+        if (!photographerResult.length) {
+            return NextResponse.json(
+                { error: "Photographer not found" },
+                { status: 404 }
+            );
+        }
+
+        const photographerId = photographerResult[0]!.id;
+
         const { name, description } = await request.json() as PostAlbumRequestBody;
 
         if (!name) {
@@ -65,7 +105,7 @@ export async function POST(request: NextRequest) {
             isShared: false,
             createdAt: new Date(),
             updatedAt: new Date(),
-            photographerId: userId,
+            photographerId,
         };
 
         const insertedAlbums: { id: number }[] = await db.insert(albums).values(newAlbumData).returning({ id: albums.id });

@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { ChevronRight } from "lucide-react"
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs"
 
@@ -10,7 +10,8 @@ interface NavBarProps {
 }
 
 export function NavBar({ albumTitle }: NavBarProps) {
-  const pathname = usePathname()
+  const router = useRouter()
+  const _pathname = usePathname()
 
   return (
     <div className="container flex h-14 w-full items-center justify-between">

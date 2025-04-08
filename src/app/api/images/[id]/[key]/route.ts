@@ -13,7 +13,7 @@ const s3Client = new S3Client({
 });
 
 export async function GET(
-    request: NextRequest,
+    _request: Request,
     { params }: { params: Promise<{ id: string; key: string }> }
 ) {
     try {
@@ -23,10 +23,10 @@ export async function GET(
             return new NextResponse('Unauthorized', { status: 401 });
         }
 
-        const resolvedParams = await params;
-        const { id, key } = resolvedParams;
+        // 2. Await the params
+        const { id, key: _key } = await params;
 
-        // 2. Get the file from R2
+        // 3. Get the file from R2
         const command = new GetObjectCommand({
             Bucket: process.env.R2_BUCKET_NAME ?? '',
             Key: id,
@@ -38,7 +38,7 @@ export async function GET(
             return new NextResponse('File not found', { status: 404 });
         }
 
-        // 3. Stream the file back to the client
+        // 4. Stream the file back to the client
         const headers = new Headers();
         if (object.ContentType) {
             headers.set('Content-Type', object.ContentType);

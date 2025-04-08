@@ -2,18 +2,12 @@ import { NextResponse } from "next/server";
 import { db } from "~/server/db";
 import { photographers } from "~/server/db/schema";
 import type { NextRequest } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 
 interface PostBody {
     name: string;
+    email: string;
 }
-
-// Placeholder for authentication logic
-// In a real app, you'd verify the user's identity here
-const authenticateUser = async (request: NextRequest): Promise<boolean> => {
-    // TODO: Implement actual authentication logic
-    console.log("Placeholder auth check for request:", request.url) // Added log
-    return true; // Return true for the placeholder
-};
 
 export async function GET() {
     try {
@@ -29,24 +23,31 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-    const authResult = await authenticateUser(request);
-    if (authResult === false) {
+    const { userId } = await auth();
+    if (!userId) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     try {
-        const { name } = await request.json() as PostBody;
+        const { name, email } = await request.json() as PostBody;
 
-        if (!name) {
+        if (!name || !email) {
             return NextResponse.json(
-                { error: "Missing name" },
+                { error: "Name and email are required" },
                 { status: 400 }
             );
         }
 
         const insertedPhotographers: { id: number }[] = await db
             .insert(photographers)
-            .values({ name })
+            .values({
+                name,
+                email,
+                clerkId: userId,
+                tier: 'free',
+                isActive: true,
+                metadata: {},
+            })
             .returning({ id: photographers.id });
 
         if (!insertedPhotographers || insertedPhotographers.length === 0) {

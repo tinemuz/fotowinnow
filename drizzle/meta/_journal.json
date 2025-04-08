@@ -8,6 +8,13 @@
       "when": 1744072096752,
       "tag": "0000_small_rafael_vega",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1744108636727,
+      "tag": "0001_left_susan_delgado",
+      "breakpoints": true
     }
   ]
 }

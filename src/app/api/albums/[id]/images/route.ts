@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { db } from "~/server/db";
-import { images } from "~/server/db/schema";
+import { images, albums, photographers } from "~/server/db/schema";
 import { eq, and } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
-import { albums } from "~/server/db/schema";
 
 // Remove unused RouteContext type
 // type RouteContext = {
@@ -43,13 +42,27 @@ export async function GET(
             );
         }
 
-        // 3. Verify album ownership (Temporarily disabled - any authenticated user can access any album)
+        // Get photographer ID from our database
+        const photographerResult = await db
+            .select({ id: photographers.id })
+            .from(photographers)
+            .where(eq(photographers.clerkId, userId))
+            .limit(1);
+
+        if (!photographerResult.length) {
+            return NextResponse.json(
+                { error: "Photographer not found" },
+                { status: 404 }
+            );
+        }
+
+        const photographerId = photographerResult[0]!.id;
+
+        // 3. Verify album ownership
         const albumResults = await db
-            .select({ id: albums.id }) // Select only necessary field
+            .select({ id: albums.id, isShared: albums.isShared, photographerId: albums.photographerId })
             .from(albums)
-            .where(
-                eq(albums.id, albumId)
-            )
+            .where(eq(albums.id, albumId))
             .limit(1);
 
         if (!albumResults || albumResults.length === 0) {
@@ -57,7 +70,15 @@ export async function GET(
             return NextResponse.json({ error: "Album not found" }, { status: 404 });
         }
 
-        // 4. Fetch images for this album (Ownership check temporarily disabled)
+        const album = albumResults[0]!;
+
+        // Check if user has access to the album
+        if (album.photographerId !== photographerId && !album.isShared) {
+            console.warn('Unauthorized access attempt to album:', { albumId, userId });
+            return NextResponse.json({ error: "Unauthorized access to album" }, { status: 403 });
+        }
+
+        // 4. Fetch images for this album
         const albumImages = await db
             .select()
             .from(images)
@@ -69,7 +90,6 @@ export async function GET(
             );
 
         console.log("Found images for user in album:", { count: albumImages.length, albumId, userId });
-
         return NextResponse.json(albumImages);
     } catch (error) {
         console.error("Error fetching album images:", error);
@@ -107,18 +127,40 @@ export async function POST(
             );
         }
 
-        // Verify album exists (Ownership check temporarily disabled)
+        // Get photographer ID from our database
+        const photographerResult = await db
+            .select({ id: photographers.id })
+            .from(photographers)
+            .where(eq(photographers.clerkId, userId))
+            .limit(1);
+
+        if (!photographerResult.length) {
+            return NextResponse.json(
+                { error: "Photographer not found" },
+                { status: 404 }
+            );
+        }
+
+        const photographerId = photographerResult[0]!.id;
+
+        // Verify album ownership
         const albumResults = await db
-            .select({ id: albums.id }) // Select only necessary field
+            .select({ id: albums.id, photographerId: albums.photographerId })
             .from(albums)
-            .where(
-                eq(albums.id, albumId)
-            )
+            .where(eq(albums.id, albumId))
             .limit(1);
 
         if (!albumResults || albumResults.length === 0) {
             console.warn('Album not found when creating image:', { albumId });
             return NextResponse.json({ error: "Album not found" }, { status: 404 });
+        }
+
+        const album = albumResults[0]!;
+
+        // Check if user owns the album
+        if (album.photographerId !== photographerId) {
+            console.warn('Unauthorized attempt to add image to album:', { albumId, userId });
+            return NextResponse.json({ error: "Unauthorized: You don't own this album" }, { status: 403 });
         }
 
         // 3. Parse Request Body
@@ -184,10 +226,7 @@ export async function POST(
 
         return NextResponse.json(newImage[0]);
     } catch (error) {
-        console.error("Error creating image record:", error instanceof Error ? {
-            message: error.message,
-            stack: error.stack
-        } : error);
+        console.error("Error creating image:", error);
         return NextResponse.json(
             { error: "Failed to create image" },
             { status: 500 }

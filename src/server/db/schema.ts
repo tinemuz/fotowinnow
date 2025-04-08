@@ -5,7 +5,9 @@ import {
   timestamp,
   boolean,
   integer,
-  index
+  index,
+  varchar,
+  json
 } from "drizzle-orm/pg-core";
 
 /**
@@ -16,16 +18,25 @@ import {
  */
 export const fotowinnowTable = (name: string) => `fotowinnow_${name}`;
 
-// Photographers table to normalize photographer data
+// Photographers table to normalize photographer data and sync with Clerk
 export const photographers = pgTable(
   fotowinnowTable("photographer"),
   {
     id: serial("id").primaryKey(),
+    clerkId: varchar("clerk_id", { length: 191 }).notNull().unique(),
+    email: varchar("email", { length: 255 }).notNull(),
     name: text("name").notNull(),
+    tier: varchar("tier", { length: 50 }).default("free").notNull(),
+    metadata: json("metadata"),
+    isActive: boolean("is_active").default(true).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
-  (t) => [index("photographer_name_idx").on(t.name)],
+  (t) => [
+    index("photographer_clerk_id_idx").on(t.clerkId),
+    index("photographer_email_idx").on(t.email),
+    index("photographer_name_idx").on(t.name),
+  ],
 );
 
 // Albums table
@@ -39,7 +50,9 @@ export const albums = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
     isShared: boolean("is_shared").default(false).notNull(),
-    photographerId: text("photographer_id").notNull(),
+    photographerId: integer("photographer_id")
+      .references(() => photographers.id)
+      .notNull(),
   },
   (t) => [
     index("album_title_idx").on(t.title),
