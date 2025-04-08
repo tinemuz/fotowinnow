@@ -25,7 +25,7 @@ export async function createAlbum(data: {
     title: string;
     description?: string;
     coverImage: string;
-    photographerId: number;
+    photographerId: string;
 }): Promise<Album> {
     const response = await fetch(`${API_BASE_URL}/albums`, {
         method: "POST",
@@ -53,6 +53,7 @@ export async function fetchAlbumImages(albumId: number): Promise<Image[]> {
 export async function createImage(albumId: number, data: {
     filename: string;
     caption?: string;
+    url?: string;
 }): Promise<Image> {
     const response = await fetch(`${API_BASE_URL}/albums/${albumId}/images`, {
         method: "POST",

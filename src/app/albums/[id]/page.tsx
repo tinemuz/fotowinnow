@@ -50,17 +50,23 @@ export default function AlbumDetail() {
     setSelectedImage(image)
   }
 
-  const handleUploadPhotos = async (files: File[]) => {
+  const handleUploadPhotos = async (files: (File & { key?: string; url?: string })[]) => {
     try {
       for (const file of files) {
+        if (!file.key || !file.url) {
+          console.error('Missing key or URL for file:', file.name);
+          continue;
+        }
+        
         const newImage = await createImage(albumId, {
           filename: file.name,
           caption: file.name,
-        })
-        setImages((prev) => [...prev, newImage])
+          url: file.url
+        });
+        setImages((prev) => [...prev, newImage]);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to upload images")
+      setError(err instanceof Error ? err.message : "Failed to upload images");
     }
   }
 
