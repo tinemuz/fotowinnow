@@ -22,6 +22,20 @@
       "when": 1744116178622,
       "tag": "0002_neat_sunspot",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1744129516769,
+      "tag": "0003_clever_ulik",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1744129710930,
+      "tag": "0004_strong_namor",
+      "breakpoints": true
     }
   ]
 }

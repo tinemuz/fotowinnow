@@ -7,7 +7,8 @@ import {
   integer,
   index,
   varchar,
-  json
+  json,
+  pgEnum
 } from "drizzle-orm/pg-core";
 
 /**
@@ -39,6 +40,9 @@ export const photographers = pgTable(
   ],
 );
 
+// Use existing ENUM type for watermark quality
+export const watermarkQualityEnum = pgEnum("watermark_quality_enum", ["512p", "1080p", "2K", "4K"]);
+
 // Albums table
 export const albums = pgTable(
   fotowinnowTable("album"),
@@ -50,11 +54,9 @@ export const albums = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
     isShared: boolean("is_shared").default(false).notNull(),
-    photographerId: integer("photographer_id")
-      .references(() => photographers.id)
-      .notNull(),
+    photographerId: text("photographer_id").notNull(),
     watermarkText: text("watermark_text").default("fotowinnow"),
-    watermarkQuality: text("watermark_quality").default("1080p"),
+    watermarkQuality: watermarkQualityEnum("watermark_quality").default("1080p"),
     watermarkFont: text("watermark_font").default("Space Mono"),
     watermarkOpacity: integer("watermark_opacity").default(30),
   },

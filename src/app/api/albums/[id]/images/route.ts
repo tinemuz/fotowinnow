@@ -78,7 +78,7 @@ export async function GET(
         const album = albumResults[0]!;
 
         // Check if user has access to the album
-        if (album.photographerId !== photographerId && !album.isShared) {
+        if (album.photographerId !== photographerId.toString() && !album.isShared) {
             console.warn('Unauthorized access attempt to album:', { albumId, userId });
             return NextResponse.json({ error: "Unauthorized access to album" }, { status: 403 });
         }
@@ -154,6 +154,9 @@ export async function POST(
                 id: albums.id,
                 photographerId: albums.photographerId,
                 title: albums.title,
+                watermarkText: albums.watermarkText,
+                watermarkQuality: albums.watermarkQuality,
+                watermarkFont: albums.watermarkFont,
             })
             .from(albums)
             .where(eq(albums.id, albumId))
@@ -167,7 +170,7 @@ export async function POST(
         const album = albumResults[0]!;
 
         // Check if user owns the album
-        if (album.photographerId !== photographerId) {
+        if (album.photographerId !== photographerId.toString()) {
             console.warn('Unauthorized attempt to add image to album:', { albumId, userId });
             return NextResponse.json({ error: "Unauthorized: You don't own this album" }, { status: 403 });
         }
@@ -185,10 +188,13 @@ export async function POST(
         }
 
         // Process the image to create optimized and watermarked versions
+        const imageKey = url.replace('/api/images/', '');
         console.log('Initiating image processing request:', {
             origin: request.nextUrl.origin,
-            imageKey: url.replace('/api/images/', ''),
-            watermark: `© ${album.title}`
+            imageKey,
+            watermark: album.watermarkText ?? 'fotowinnow',
+            quality: album.watermarkQuality ?? '1080p',
+            fontName: album.watermarkFont ?? 'Space Mono'
         });
 
         const processResponse = await fetch(`${request.nextUrl.origin}/api/images/process`, {
@@ -199,22 +205,17 @@ export async function POST(
                 'Cookie': request.headers.get('Cookie') ?? ''
             },
             body: JSON.stringify({
-                key: url.replace('/api/images/', ''),
-                watermark: `© ${album.title}`,
-            }),
-        });
-
-        console.log('Image processing response:', {
-            status: processResponse.status,
-            ok: processResponse.ok,
-            statusText: processResponse.statusText
+                key: imageKey,
+                watermark: album.watermarkText ?? 'fotowinnow',
+                quality: album.watermarkQuality ?? '1080p',
+                fontName: album.watermarkFont ?? 'Space Mono'
+            })
         });
 
         if (!processResponse.ok) {
-            const errorText = await processResponse.text();
             console.error('Failed to process image:', {
                 status: processResponse.status,
-                error: errorText,
+                error: await processResponse.text(),
                 headers: Object.fromEntries(processResponse.headers.entries())
             });
             return NextResponse.json(

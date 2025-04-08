@@ -58,7 +58,7 @@ export async function GET(
             .where(
                 and(
                     eq(albums.id, albumId),
-                    eq(albums.photographerId, photographerId)
+                    eq(albums.photographerId, photographerId.toString())
                 )
             )
             .limit(1);
@@ -133,7 +133,7 @@ export async function PATCH(
             .where(
                 and(
                     eq(albums.id, albumId),
-                    eq(albums.photographerId, photographerId)
+                    eq(albums.photographerId, photographerId.toString())
                 )
             )
             .limit(1);

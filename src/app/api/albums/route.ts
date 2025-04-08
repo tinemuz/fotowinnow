@@ -43,7 +43,7 @@ export async function GET(_request: NextRequest) {
                 photographerId: albums.photographerId,
             })
             .from(albums)
-            .where(eq(albums.photographerId, photographerId));
+            .where(eq(albums.photographerId, photographerId.toString()));
 
         return NextResponse.json(allAlbums);
     } catch (error) {
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
             isShared: false,
             createdAt: new Date(),
             updatedAt: new Date(),
-            photographerId,
+            photographerId: photographerId.toString(),
             // Watermark fields will be added by the migration with defaults
         } as const;
 

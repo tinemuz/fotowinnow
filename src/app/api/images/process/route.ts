@@ -27,9 +27,6 @@ const R2_CONFIG = {
     bucketName: process.env.R2_BUCKET_NAME,
 } as const;
 
-// Configure font paths
-const fontsPath = path.resolve(process.cwd(), 'fonts');
-
 // Set environment variables for production
 if (process.env.NODE_ENV === 'production') {
     process.env.FONTCONFIG_PATH = '/var/task/fonts';
@@ -74,10 +71,10 @@ interface ProcessImageRequest {
 }
 
 const QUALITY_DIMENSIONS = {
-    "512p": 512,
-    "1080p": 1080,
-    "2K": 1440,
-    "4K": 2160,
+    "512p": { width: 910, height: 512 },
+    "1080p": { width: 1920, height: 1080 },
+    "2K": { width: 2560, height: 1440 },
+    "4K": { width: 3840, height: 2160 },
 } as const;
 
 export async function POST(req: NextRequest) {
@@ -85,12 +82,6 @@ export async function POST(req: NextRequest) {
         // 1. Authenticate the user
         console.log('Starting image processing request');
         const authResult = await auth();
-        console.log('Auth result:', {
-            userId: authResult?.userId,
-            sessionId: authResult?.sessionId,
-            sessionClaims: authResult?.sessionClaims
-        });
-
         const userId = authResult.userId;
         if (!userId) {
             console.warn('Unauthorized: No userId in auth result');
@@ -100,11 +91,26 @@ export async function POST(req: NextRequest) {
         // 2. Parse request body
         const body = await req.json() as ProcessImageRequest;
         const { key, watermark, quality = "1080p", fontName = "Space Mono" } = body;
-        console.log('Received processing request:', { key, watermarkLength: watermark?.length });
 
+        console.log('Received processing request:', {
+            key,
+            watermarkLength: watermark?.length,
+            quality,
+            fontName
+        });
+
+        // Validate required fields
         if (!key) {
             console.warn('Missing key in request body');
             return NextResponse.json({ error: "Missing key" }, { status: 400 });
+        }
+
+        // Validate quality option
+        if (!QUALITY_DIMENSIONS[quality]) {
+            console.warn('Invalid quality option:', quality);
+            return NextResponse.json({
+                error: "Invalid quality option. Must be one of: 512p, 1080p, 2K, 4K"
+            }, { status: 400 });
         }
 
         // 3. Get the original image from R2
@@ -140,19 +146,45 @@ export async function POST(req: NextRequest) {
 
         // Get image metadata
         const metadata = await sharp(buffer).metadata();
-        const width = metadata.width ?? 0;
-        const height = metadata.height ?? 0;
+        const originalWidth = metadata.width ?? 0;
+        const originalHeight = metadata.height ?? 0;
 
-        // Calculate target dimensions based on quality setting
-        const targetSize = QUALITY_DIMENSIONS[quality];
-        const aspectRatio = width / height;
-        const [newWidth, newHeight] = width > height
-            ? [Math.round(targetSize * aspectRatio), targetSize]
-            : [targetSize, Math.round(targetSize / aspectRatio)];
+        if (originalWidth === 0 || originalHeight === 0) {
+            return NextResponse.json({ error: "Invalid image dimensions" }, { status: 400 });
+        }
+
+        // Calculate target dimensions based on quality setting while maintaining aspect ratio
+        const targetDimensions = QUALITY_DIMENSIONS[quality];
+        console.log('Target dimensions:', {
+            quality,
+            targetDimensions,
+            originalWidth,
+            originalHeight
+        });
+
+        const originalAspectRatio = originalWidth / originalHeight;
+        const targetAspectRatio = targetDimensions.width / targetDimensions.height;
+
+        let newWidth: number;
+        let newHeight: number;
+
+        if (originalAspectRatio > targetAspectRatio) {
+            // Image is wider than target aspect ratio
+            newWidth = targetDimensions.width;
+            newHeight = Math.round(targetDimensions.width / originalAspectRatio);
+        } else {
+            // Image is taller than target aspect ratio
+            newHeight = targetDimensions.height;
+            newWidth = Math.round(targetDimensions.height * originalAspectRatio);
+        }
 
         // 4. Process the image - optimize and create webp version
         const optimizedImage = await sharp(buffer)
-            .resize(newWidth, newHeight, { fit: 'inside', withoutEnlargement: true })
+            .resize(newWidth, newHeight, {
+                fit: 'contain',
+                withoutEnlargement: true,
+                background: { r: 0, g: 0, b: 0, alpha: 0 }
+            })
             .webp({ quality: 80 })
             .toBuffer();
 
@@ -173,9 +205,16 @@ export async function POST(req: NextRequest) {
         await s3Client.send(optimizedCommand);
 
         // 6. Create and upload watermarked version
+        const targetSize = {
+            "512p": 512,
+            "1080p": 1080,
+            "2K": 1440,
+            "4K": 2160,
+        }[quality] ?? 512;
+
         const scaleFactor = targetSize / 512;
         const fontSize = Math.round(24 * scaleFactor);
-        const baseCharWidth = 14;
+        const baseCharWidth = 14; // Base character width for 512p
         const charWidth = Math.round(baseCharWidth * scaleFactor);
         const watermarkWidth = watermark.length * charWidth;
 
@@ -187,6 +226,20 @@ export async function POST(req: NextRequest) {
         const diagonalLength = Math.ceil(Math.sqrt(newWidth * newWidth + newHeight * newHeight));
         const numCols = Math.ceil(diagonalLength / totalHorizontalSpace) + 2;
         const numRows = Math.ceil(diagonalLength / totalVerticalSpace) + 2;
+
+        console.log('Watermark pattern calculations:', {
+            scaleFactor,
+            fontSize,
+            charWidth,
+            watermarkWidth,
+            horizontalSpacing,
+            verticalSpacing,
+            totalHorizontalSpace,
+            totalVerticalSpace,
+            diagonalLength,
+            numCols,
+            numRows
+        });
 
         const fontFamily = fontFamilyMap[fontName] ?? fontFamilyMap['Space Mono'];
 
