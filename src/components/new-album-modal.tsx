@@ -30,10 +30,8 @@ export function NewAlbumModal({ isOpen, onClose, onAlbumCreated }: NewAlbumModal
 
     try {
       await createAlbum({
-        title,
-        description,
-        coverImage: "",
-        photographerId: "0"
+        name: title,
+        description
       })
       setTitle("")
       setDescription("")

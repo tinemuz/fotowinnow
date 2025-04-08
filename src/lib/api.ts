@@ -22,10 +22,8 @@ export async function fetchAlbumById(id: number): Promise<Album> {
 
 // Create a new album
 export async function createAlbum(data: {
-    title: string;
+    name: string;
     description?: string;
-    coverImage: string;
-    photographerId: string;
 }): Promise<Album> {
     const response = await fetch(`${API_BASE_URL}/albums`, {
         method: "POST",
