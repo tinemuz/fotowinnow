@@ -5,7 +5,14 @@ import sharp from "sharp";
 import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
-import { Space_Mono } from "next/font/google";
+import {
+    Cutive_Mono,
+    IBM_Plex_Mono,
+    JetBrains_Mono,
+    Roboto_Mono,
+    Source_Code_Pro,
+    Space_Mono
+} from "next/font/google";
 
 // Environment variable validation
 if (!process.env.R2_ENDPOINT) throw new Error('R2_ENDPOINT is required');
@@ -32,12 +39,22 @@ if (process.env.NODE_ENV === 'production') {
 // Disable sharp cache for serverless environment
 sharp.cache(false);
 
-// Load font
-const spaceMono = Space_Mono({
-    weight: '400',
-    subsets: ['latin'],
-    display: 'swap',
-});
+// Load fonts
+const spaceMono = Space_Mono({ weight: '400', subsets: ['latin'] });
+const robotoMono = Roboto_Mono({ weight: '400', subsets: ['latin'] });
+const sourceCodePro = Source_Code_Pro({ weight: '400', subsets: ['latin'] });
+const jetBrainsMono = JetBrains_Mono({ weight: '400', subsets: ['latin'] });
+const ibmPlexMono = IBM_Plex_Mono({ weight: '400', subsets: ['latin'] });
+const cutiveMono = Cutive_Mono({ weight: '400', subsets: ['latin'] });
+
+const fontFamilyMap = {
+    'Space Mono': spaceMono.style.fontFamily,
+    'Roboto Mono': robotoMono.style.fontFamily,
+    'Source Code Pro': sourceCodePro.style.fontFamily,
+    'JetBrains Mono': jetBrainsMono.style.fontFamily,
+    'IBM Plex Mono': ibmPlexMono.style.fontFamily,
+    'Cutive Mono': cutiveMono.style.fontFamily
+} as const;
 
 // Initialize S3 client with proper typing
 const s3Client = new S3Client({
@@ -52,7 +69,16 @@ const s3Client = new S3Client({
 interface ProcessImageRequest {
     key: string;
     watermark: string;
+    quality: "512p" | "1080p" | "2K" | "4K";
+    fontName: keyof typeof fontFamilyMap;
 }
+
+const QUALITY_DIMENSIONS = {
+    "512p": 512,
+    "1080p": 1080,
+    "2K": 1440,
+    "4K": 2160,
+} as const;
 
 export async function POST(req: NextRequest) {
     try {
@@ -73,7 +99,7 @@ export async function POST(req: NextRequest) {
 
         // 2. Parse request body
         const body = await req.json() as ProcessImageRequest;
-        const { key, watermark } = body;
+        const { key, watermark, quality = "1080p", fontName = "Space Mono" } = body;
         console.log('Received processing request:', { key, watermarkLength: watermark?.length });
 
         if (!key) {
@@ -112,16 +138,27 @@ export async function POST(req: NextRequest) {
         }
         const buffer = Buffer.concat(chunks);
 
+        // Get image metadata
+        const metadata = await sharp(buffer).metadata();
+        const width = metadata.width ?? 0;
+        const height = metadata.height ?? 0;
+
+        // Calculate target dimensions based on quality setting
+        const targetSize = QUALITY_DIMENSIONS[quality];
+        const aspectRatio = width / height;
+        const [newWidth, newHeight] = width > height
+            ? [Math.round(targetSize * aspectRatio), targetSize]
+            : [targetSize, Math.round(targetSize / aspectRatio)];
+
         // 4. Process the image - optimize and create webp version
         const optimizedImage = await sharp(buffer)
-            .resize(1920, 1080, { fit: 'inside', withoutEnlargement: true })
+            .resize(newWidth, newHeight, { fit: 'inside', withoutEnlargement: true })
             .webp({ quality: 80 })
             .toBuffer();
 
         // Generate unique keys for the processed images
         const filenameParts = key.split('/');
-        const basePath = filenameParts.join('/');
-
+        const basePath = filenameParts.slice(0, -1).join('/');
         const optimizedKey = `${basePath}/optimized_${uuidv4()}.webp`;
         const watermarkedKey = `${basePath}/watermarked_${uuidv4()}.webp`;
 
@@ -136,22 +173,32 @@ export async function POST(req: NextRequest) {
         await s3Client.send(optimizedCommand);
 
         // 6. Create and upload watermarked version
-        const metadata = await sharp(optimizedImage).metadata();
-        const width = metadata.width ?? 1920;
-        const height = metadata.height ?? 1080;
+        const scaleFactor = targetSize / 512;
+        const fontSize = Math.round(24 * scaleFactor);
+        const baseCharWidth = 14;
+        const charWidth = Math.round(baseCharWidth * scaleFactor);
+        const watermarkWidth = watermark.length * charWidth;
 
-        const fontSize = Math.round(24 * (width / 1920)); // Scale font size based on image width
-        const watermarkWidth = watermark.length * (fontSize * 0.6); // Approximate character width
+        const horizontalSpacing = 2 * charWidth;
+        const verticalSpacing = 2 * charWidth;
+        const totalHorizontalSpace = watermarkWidth + horizontalSpacing;
+        const totalVerticalSpace = fontSize + verticalSpacing;
+
+        const diagonalLength = Math.ceil(Math.sqrt(newWidth * newWidth + newHeight * newHeight));
+        const numCols = Math.ceil(diagonalLength / totalHorizontalSpace) + 2;
+        const numRows = Math.ceil(diagonalLength / totalVerticalSpace) + 2;
+
+        const fontFamily = fontFamilyMap[fontName] ?? fontFamilyMap['Space Mono'];
 
         const svgContent = `
-            <svg width="${width}" height="${height}">
-                <style>.watermark { font-family: ${spaceMono.style.fontFamily}; font-size: ${fontSize}px; fill: rgba(255, 255, 255, 0.3); }</style>
-                <g transform="translate(${width / 2}, ${height / 2}) rotate(45) translate(${-width}, ${-height})">
-                    ${Array.from({ length: Math.ceil(height * 2 / (fontSize * 2)) }, (_, row) =>
-            Array.from({ length: Math.ceil(width * 2 / watermarkWidth) }, (_, col) =>
+            <svg width="${newWidth}" height="${newHeight}">
+                <style>.watermark { font-family: ${fontFamily}; font-size: ${fontSize}px; fill: rgba(255, 255, 255, 0.3); }</style>
+                <g transform="translate(${newWidth / 2}, ${newHeight / 2}) rotate(45) translate(${-diagonalLength / 2}, ${-diagonalLength / 2})">
+                    ${Array.from({ length: numRows }, (_, row) =>
+            Array.from({ length: numCols }, (_, col) =>
                 `<text 
-                                x="${col * watermarkWidth + (row % 2 ? watermarkWidth / 2 : 0)}" 
-                                y="${row * fontSize * 2}" 
+                                x="${col * totalHorizontalSpace + (row % 2 ? totalHorizontalSpace / 2 : 0)}" 
+                                y="${row * totalVerticalSpace}" 
                                 class="watermark"
                             >${watermark}</text>`
             ).join('')
@@ -167,7 +214,11 @@ export async function POST(req: NextRequest) {
                 left: 0,
                 blend: 'over',
             }])
-            .webp({ quality: 80 })
+            .webp({
+                quality: 80,
+                effort: 6,
+                lossless: false
+            })
             .toBuffer();
 
         const watermarkedCommand = new PutObjectCommand({
