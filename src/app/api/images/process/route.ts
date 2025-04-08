@@ -174,23 +174,22 @@ export async function POST(req: NextRequest) {
         const originalAspectRatio = originalWidth / originalHeight;
         const targetAspectRatio = targetDimensions.width / targetDimensions.height;
 
-        let newWidth: number;
-        let newHeight: number;
+        // Calculate new dimensions based on aspect ratio
+        const aspectRatio = originalWidth / originalHeight;
+        const [newWidth, newHeight] = originalWidth > originalHeight
+            ? [Math.round(targetDimensions.width * aspectRatio), targetDimensions.width]
+            : [targetDimensions.width, Math.round(targetDimensions.width / aspectRatio)];
 
-        if (originalAspectRatio > targetAspectRatio) {
-            // Image is wider than target aspect ratio
-            newWidth = targetDimensions.width;
-            newHeight = Math.round(targetDimensions.width / originalAspectRatio);
-        } else {
-            // Image is taller than target aspect ratio
-            newHeight = targetDimensions.height;
-            newWidth = Math.round(targetDimensions.height * originalAspectRatio);
-        }
+        console.log('Calculated dimensions:', {
+            aspectRatio,
+            newWidth,
+            newHeight
+        });
 
         // 4. Process the image - optimize and create webp version
         const optimizedImage = await sharp(buffer)
             .resize(newWidth, newHeight, {
-                fit: 'contain',
+                fit: 'fill',  // Changed to fill to match working implementation
                 withoutEnlargement: true,
                 background: { r: 0, g: 0, b: 0, alpha: 0 }
             })
@@ -214,31 +213,38 @@ export async function POST(req: NextRequest) {
         await s3Client.send(optimizedCommand);
 
         // 6. Create and upload watermarked version
-        const targetSize = {
-            "512p": 512,
-            "1080p": 1080,
-            "2K": 1440,
-            "4K": 2160,
-        }[quality] ?? 512;
+        const targetSize = targetDimensions.width; // Use the width as our base size
 
         const scaleFactor = targetSize / 512;
         const fontSize = Math.round(24 * scaleFactor);
+        console.log('Watermark settings:', {
+            scaleFactor,
+            fontSize,
+            fontFamily: fontFamilyMap[fontName]
+        });
+
         const baseCharWidth = 14; // Base character width for 512p
         const charWidth = Math.round(baseCharWidth * scaleFactor);
         const watermarkWidth = watermark.length * charWidth;
 
         const horizontalSpacing = 2 * charWidth;
         const verticalSpacing = 2 * charWidth;
+
         const totalHorizontalSpace = watermarkWidth + horizontalSpacing;
         const totalVerticalSpace = fontSize + verticalSpacing;
 
-        const diagonalLength = Math.ceil(Math.sqrt(newWidth * newWidth + newHeight * newHeight));
-        const numCols = Math.ceil(diagonalLength / totalHorizontalSpace) + 2;
-        const numRows = Math.ceil(diagonalLength / totalVerticalSpace) + 2;
+        // Calculate diagonal length with extra padding to ensure full coverage
+        const diagonalLength = Math.ceil(Math.sqrt(
+            (newWidth * newWidth) + (newHeight * newHeight)
+        )) + Math.max(totalHorizontalSpace, totalVerticalSpace) * 2; // Add padding of one full watermark unit
+
+        // Increase the number of rows and columns to ensure full coverage
+        const numCols = Math.ceil(diagonalLength / totalHorizontalSpace) + 4; // Added extra columns
+        const numRows = Math.ceil(diagonalLength / totalVerticalSpace) + 4; // Added extra rows
 
         console.log('Watermark pattern calculations:', {
+            targetDimensions,
             scaleFactor,
-            fontSize,
             charWidth,
             watermarkWidth,
             horizontalSpacing,
@@ -247,7 +253,8 @@ export async function POST(req: NextRequest) {
             totalVerticalSpace,
             diagonalLength,
             numCols,
-            numRows
+            numRows,
+            imageDimensions: { width: newWidth, height: newHeight }
         });
 
         const fontFamily = fontFamilyMap[fontName] ?? fontFamilyMap['Space Mono'];
@@ -270,6 +277,7 @@ export async function POST(req: NextRequest) {
         `;
 
         const watermarkedImage = await sharp(optimizedImage)
+            .resize(newWidth, newHeight, { fit: "fill" })  // Changed to fill to match working implementation
             .composite([{
                 input: Buffer.from(svgContent),
                 top: 0,
