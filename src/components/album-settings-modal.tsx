@@ -31,7 +31,7 @@ export function AlbumSettingsModal({ isOpen, onClose, album, onSave }: AlbumSett
   const [description, setDescription] = useState(album.description ?? "")
   const [watermarkText, setWatermarkText] = useState(album.watermarkText ?? "fotowinnow")
   const [watermarkQuality, setWatermarkQuality] = useState<"512p" | "1080p" | "2K" | "4K">(album.watermarkQuality ?? "1080p")
-  const [watermarkOpacity, setWatermarkOpacity] = useState(album.watermarkOpacity ?? 30)
+  const [watermarkOpacity, setWatermarkOpacity] = useState(album.watermarkOpacity ?? 10)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 

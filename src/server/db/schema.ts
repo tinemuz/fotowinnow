@@ -58,7 +58,7 @@ export const albums = pgTable(
     watermarkText: text("watermark_text").default("fotowinnow"),
     watermarkQuality: watermarkQualityEnum("watermark_quality").default("1080p"),
     watermarkFont: text("watermark_font").default("Space Mono"),
-    watermarkOpacity: integer("watermark_opacity").default(30),
+    watermarkOpacity: integer("watermark_opacity").default(10),
   },
   (t) => [
     index("album_title_idx").on(t.title),

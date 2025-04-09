@@ -77,6 +77,7 @@ interface ProcessImageRequest {
     watermark: string;
     quality: "512p" | "1080p" | "2K" | "4K";
     fontName: keyof typeof fontFamilyMap;
+    watermarkOpacity: number;
 }
 
 const QUALITY_DIMENSIONS = {
@@ -99,7 +100,7 @@ export async function POST(req: NextRequest) {
 
         // 2. Parse request body
         const body = await req.json() as ProcessImageRequest;
-        const { key, watermark, quality = "1080p", fontName = "Space Mono" } = body;
+        const { key, watermark, quality = "1080p", fontName = "Space Mono", watermarkOpacity = 10 } = body;
 
         console.log('Received processing request:', {
             key,
@@ -262,7 +263,7 @@ export async function POST(req: NextRequest) {
 
         const svgContent = `
             <svg width="${newWidth}" height="${newHeight}">
-                <style>.watermark { font-family: ${fontFamily}; font-size: ${fontSize}px; fill: rgba(255, 255, 255, 0.3); }</style>
+                <style>.watermark { font-family: ${fontFamily}; font-size: ${fontSize}px; fill: rgba(255, 255, 255, ${watermarkOpacity / 100}); }</style>
                 <g transform="translate(${newWidth / 2}, ${newHeight / 2}) rotate(45) translate(${-diagonalLength / 2}, ${-diagonalLength / 2})">
                     ${Array.from({ length: numRows }, (_, row) =>
             Array.from({ length: numCols }, (_, col) =>

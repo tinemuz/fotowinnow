@@ -208,7 +208,8 @@ export async function POST(
                 key: imageKey,
                 watermark: album.watermarkText ?? 'fotowinnow',
                 quality: album.watermarkQuality ?? '1080p',
-                fontName: album.watermarkFont ?? 'Space Mono'
+                fontName: album.watermarkFont ?? 'Space Mono',
+                watermarkOpacity: album.watermarkOpacity ?? 10
             })
         });
 

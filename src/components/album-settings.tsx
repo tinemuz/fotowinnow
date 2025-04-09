@@ -22,7 +22,7 @@ export function AlbumSettings({ album }: AlbumSettingsProps) {
     allowComments: true,
     allowDownloads: false,
     watermarkText: "WATERMARK",
-    watermarkOpacity: 30,
+    watermarkOpacity: 10,
     watermarkPosition: "center",
     expirationDays: "30",
   })
