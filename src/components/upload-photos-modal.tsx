@@ -10,6 +10,7 @@ import { useState, useRef } from "react"
 import NextImage from "next/image"
 import { toast } from "sonner"
 import { Progress } from "~/components/ui/progress"
+import { UploadProgressToast } from "~/components/upload-progress-toast"
 
 interface UploadPhotosModalProps {
   isOpen: boolean
@@ -28,12 +29,16 @@ interface UploadResponse {
 type UploadProgressRecord = Record<string, number>;
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB in bytes
+const MAX_CONCURRENT_UPLOADS = 3; // Maximum number of concurrent uploads
 
 export function UploadPhotosModal({ isOpen, onClose, _albumId, onUploadPhotos }: UploadPhotosModalProps) {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<UploadProgressRecord>({})
+  const [uploadErrors, setUploadErrors] = useState<Record<string, string>>({})
+  const [isUploadComplete, setIsUploadComplete] = useState(false)
+  const [totalSelectedFiles, setTotalSelectedFiles] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const validateFile = (file: File) => {
@@ -74,6 +79,7 @@ export function UploadPhotosModal({ isOpen, onClose, _albumId, onUploadPhotos }:
     const files = Array.from(e.target.files).filter(validateFile);
     console.log('Valid files selected:', { count: files.length });
     setSelectedFiles((prev) => [...prev, ...files]);
+    setTotalSelectedFiles((prev) => prev + files.length);
 
     // Create previews
     const newPreviews = files.map((file) => URL.createObjectURL(file));
@@ -83,6 +89,7 @@ export function UploadPhotosModal({ isOpen, onClose, _albumId, onUploadPhotos }:
 
   const removeFile = (index: number) => {
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
+    setTotalSelectedFiles((prev) => prev - 1)
     // Revoke the object URL to avoid memory leaks
     if (previews[index]) {
       URL.revokeObjectURL(previews[index])
@@ -187,6 +194,10 @@ export function UploadPhotosModal({ isOpen, onClose, _albumId, onUploadPhotos }:
         file: file.name, 
         error: error instanceof Error ? error.message : 'Unknown error' 
       });
+      setUploadErrors(prev => ({
+        ...prev,
+        [file.name]: error instanceof Error ? error.message : 'Upload failed'
+      }));
       throw error;
     }
   };
@@ -200,49 +211,54 @@ export function UploadPhotosModal({ isOpen, onClose, _albumId, onUploadPhotos }:
     }
 
     setIsUploading(true);
+    setIsUploadComplete(false);
+    setUploadProgress({});
+    setUploadErrors({});
     const uploadedFiles: Array<{ file: File; key: string; url: string }> = [];
-    const failedFiles: string[] = [];
+
+    // Close the modal immediately
+    onClose();
 
     try {
-      // Upload files sequentially to avoid overwhelming the network
-      console.log('Beginning sequential file uploads');
-      for (const file of selectedFiles) {
-        try {
-          const { key, url } = await uploadFile(file);
-          uploadedFiles.push({ file, key, url });
-          console.log('File processed successfully:', { name: file.name, key, url });
-        } catch (error) {
-          failedFiles.push(file.name);
-          console.error('Failed to process file:', { 
-            name: file.name, 
-            error: error instanceof Error ? error.message : 'Unknown error' 
-          });
-        }
-      }
+      // Upload files in parallel with a limit on concurrent uploads
+      const files = [...selectedFiles];
+      while (files.length > 0) {
+        const batch = files.splice(0, MAX_CONCURRENT_UPLOADS);
+        const uploadPromises = batch.map(async (file) => {
+          try {
+            const { key, url } = await uploadFile(file);
+            uploadedFiles.push({ file, key, url });
+          } catch (error) {
+            console.error('Failed to process file:', { 
+              name: file.name, 
+              error: error instanceof Error ? error.message : 'Unknown error' 
+            });
+          }
+        });
 
-      if (failedFiles.length > 0) {
-        console.warn('Some files failed to upload:', { failedFiles });
-        toast.error(`Failed to upload: ${failedFiles.join(', ')}`);
+        await Promise.all(uploadPromises);
       }
 
       if (uploadedFiles.length > 0) {
         console.log('Upload batch completed:', { 
           successful: uploadedFiles.length,
-          failed: failedFiles.length
+          failed: selectedFiles.length - uploadedFiles.length
         });
         onUploadPhotos(uploadedFiles.map(({ file }) => Object.assign(file, { 
           key: uploadedFiles.find(f => f.file === file)?.key,
           url: uploadedFiles.find(f => f.file === file)?.url
         })));
-        toast.success(`Successfully uploaded ${uploadedFiles.length} files`);
         
-        // Clean up previews
-        console.log('Cleaning up file previews');
-        previews.forEach((preview) => URL.revokeObjectURL(preview));
-        setSelectedFiles([]);
-        setPreviews([]);
-        setUploadProgress({});
-        onClose();
+        if (uploadedFiles.length === selectedFiles.length) {
+          toast.success(`Successfully uploaded ${uploadedFiles.length} files`);
+          // Clean up previews
+          console.log('Cleaning up file previews');
+          previews.forEach((preview) => URL.revokeObjectURL(preview));
+          setSelectedFiles([]);
+          setPreviews([]);
+        } else {
+          toast.warning(`Uploaded ${uploadedFiles.length} of ${selectedFiles.length} files`);
+        }
       }
     } catch (error) {
       console.error('Upload submission error:', error instanceof Error ? {
@@ -252,83 +268,113 @@ export function UploadPhotosModal({ isOpen, onClose, _albumId, onUploadPhotos }:
       toast.error('An error occurred during upload');
     } finally {
       setIsUploading(false);
+      setIsUploadComplete(true);
       console.log('Upload submission completed');
     }
   }
 
+  const handleRemoveUpload = (fileName: string) => {
+    if (isUploadComplete) {
+      setUploadProgress({});
+      setUploadErrors({});
+      setIsUploadComplete(false);
+      setTotalSelectedFiles(0);
+      return;
+    }
+
+    setUploadProgress(prev => {
+      const newProgress = { ...prev };
+      delete newProgress[fileName];
+      return newProgress;
+    });
+    setUploadErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[fileName];
+      return newErrors;
+    });
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Upload Photos</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Upload Photos</DialogTitle>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-          <div
-            className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/50 transition-colors"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <ImagePlus className="h-8 w-8 mx-auto text-muted-foreground" />
-            <p className="mt-2 text-sm font-medium">Click to select photos or drag and drop</p>
-            <p className="text-xs text-muted-foreground mt-1">JPG, PNG or WEBP (max. 50MB each)</p>
-            <Input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={handleFileChange}
-              disabled={isUploading}
-            />
-          </div>
-
-          {previews.length > 0 && (
-            <div className="space-y-2">
-              <Label>Selected Photos ({previews.length})</Label>
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                {previews.map((preview, index) => (
-                  <div key={index} className="relative aspect-square rounded-md overflow-hidden border">
-                    <NextImage
-                      src={preview}
-                      alt={`Preview ${index + 1}`}
-                      fill
-                      className="object-cover"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-1 right-1 h-5 w-5 rounded-full"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        removeFile(index)
-                      }}
-                      disabled={isUploading}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                    {isUploading && selectedFiles[index]?.name && uploadProgress[selectedFiles[index].name] !== undefined && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-1">
-                        <Progress value={uploadProgress[selectedFiles[index].name]} className="h-1" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+          <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+            <div
+              className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <ImagePlus className="h-8 w-8 mx-auto text-muted-foreground" />
+              <p className="mt-2 text-sm font-medium">Click to select photos or drag and drop</p>
+              <p className="text-xs text-muted-foreground mt-1">JPG, PNG or WEBP (max. 50MB each)</p>
+              <Input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleFileChange}
+                disabled={isUploading}
+              />
             </div>
-          )}
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isUploading}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={selectedFiles.length === 0 || isUploading}>
-              {isUploading ? "Uploading..." : "Upload Photos"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+            {previews.length > 0 && (
+              <div className="space-y-2">
+                <Label>Selected Photos ({previews.length})</Label>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                  {previews.map((preview, index) => (
+                    <div key={index} className="relative aspect-square rounded-md overflow-hidden border">
+                      <NextImage
+                        src={preview}
+                        alt={`Preview ${index + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-1 right-1 h-5 w-5 rounded-full"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          removeFile(index)
+                        }}
+                        disabled={isUploading}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={onClose} disabled={isUploading}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={selectedFiles.length === 0 || isUploading}>
+                {isUploading ? "Starting Upload..." : "Upload Photos"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <UploadProgressToast
+        files={Object.entries(uploadProgress).map(([name, progress]) => ({
+          name,
+          progress,
+          error: uploadErrors[name]
+        }))}
+        totalFiles={totalSelectedFiles}
+        isComplete={isUploadComplete}
+        onRemove={handleRemoveUpload}
+      />
+    </>
   )
 }
 
