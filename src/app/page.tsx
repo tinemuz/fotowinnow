@@ -5,7 +5,6 @@ import { AlbumCard } from "~/components/album-card"
 import { Button } from "~/components/ui/button"
 import { PlusCircle } from "lucide-react"
 import { NewAlbumModal } from "~/components/new-album-modal"
-// import { useRouter } from "next/navigation"
 import { fetchAlbums } from "~/lib/api"
 import type { Album } from "~/lib/types"
 import { NavBar } from "~/components/nav-bar"
@@ -70,10 +69,10 @@ export default function Dashboard() {
       <div className="container py-8 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Your Albums</h1>
-          <Button onClick={() => setIsNewAlbumModalOpen(true)}>
+          <button className="flex items-center bg-stone-200 px-3 py-2 rounded-full flex-row cursor-pointer" onClick={() => setIsNewAlbumModalOpen(true)}>
             <PlusCircle className="mr-2 h-4 w-4" />
             New Album
-          </Button>
+          </button>
         </div>
 
         {albums.length === 0 ? (
@@ -81,7 +80,7 @@ export default function Dashboard() {
             <p className="text-muted-foreground">No albums yet. Create your first album!</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {albums.map((album) => (
               <AlbumCard key={album.id} album={album} />
             ))}
