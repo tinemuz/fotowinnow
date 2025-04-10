@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { AlbumCard } from "~/components/album-card"
-import { Button } from "~/components/ui/button"
 import { PlusCircle } from "lucide-react"
 import { NewAlbumModal } from "~/components/new-album-modal"
 import { fetchAlbums } from "~/lib/api"
@@ -67,7 +66,7 @@ export default function Dashboard() {
     <>
       <NavBar />
       <div className="container py-8 space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex px-2 items-center justify-between">
           <h1 className="text-2xl font-bold">Your Albums</h1>
           <button className="flex items-center bg-stone-200 px-3 py-2 rounded-full flex-row cursor-pointer" onClick={() => setIsNewAlbumModalOpen(true)}>
             <PlusCircle className="mr-2 h-4 w-4" />
