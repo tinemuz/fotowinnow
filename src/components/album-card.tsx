@@ -31,7 +31,7 @@ export function AlbumCard({ album }: AlbumCardProps) {
       </div>
 
       <div className="pt-2 font-semibold">{album.title}</div>
-      <div className="text-sm text-stone-500">
+      <div className="text-xs text-stone-500">
         {new Date(album.updatedAt ?? album.createdAt).toLocaleDateString(
           "en-US",
           {

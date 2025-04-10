@@ -5,6 +5,7 @@ import NextImage from "next/image"
 import { MoreHorizontal } from "lucide-react"
 import { Button } from "~/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "~/components/ui/dropdown-menu"
+import { useState } from "react"
 
 interface ImageGridProps {
   images: ImageType[]
@@ -14,6 +15,8 @@ interface ImageGridProps {
 }
 
 export function ImageGrid({ images, watermarked, clientView = false, onImageClick }: ImageGridProps) {
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
       {images.map((image) => (
@@ -27,8 +30,8 @@ export function ImageGrid({ images, watermarked, clientView = false, onImageClic
             />
 
             {!clientView && (
-              <div className="absolute top-2 right-2 z-10" onClick={(e) => e.stopPropagation()}>
-                <DropdownMenu>
+              <div className={`absolute top-2 right-2 z-10 transition-opacity ${openMenuId === image.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`} onClick={(e) => e.stopPropagation()}>
+                <DropdownMenu open={openMenuId === image.id} onOpenChange={(open) => setOpenMenuId(open ? image.id : null)}>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-6 w-6 bg-white/70 backdrop-blur-sm shadow">
                       <MoreHorizontal className="h-3 w-3" />
