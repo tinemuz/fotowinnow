@@ -8,11 +8,13 @@ interface AlbumCardProps {
   title: string;
   description: string | null;
   coverImage: string;
+  updatedAt: Date;
+  createdAt: Date;
   isShared: boolean;
   onClick: () => void;
 }
 
-export function AlbumCard({ title, description, coverImage, onClick }: AlbumCardProps) {
+export function AlbumCard({ title, description, coverImage, onClick, updatedAt, createdAt }: AlbumCardProps) {
   return (
     <div
       className="overflow-hidden p-2 duration-100 ease-in-out cursor-pointer hover:bg-stone-100"
@@ -28,7 +30,13 @@ export function AlbumCard({ title, description, coverImage, onClick }: AlbumCard
 
       <div className="pt-2 font-semibold">{title}</div>
       <div className="text-xs text-stone-500">
-        {description}
+        <div>
+          {new Date(updatedAt ?? createdAt).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })}
+        </div>
       </div>
     </div>
   )

@@ -90,6 +90,8 @@ export default function Dashboard() {
                 key={album.id}
                 id={album.id}
                 title={album.title}
+                updatedAt={album.updatedAt}
+                createdAt={album.createdAt}
                 description={album.description}
                 coverImage={album.coverImage}
                 isShared={album.isShared}
