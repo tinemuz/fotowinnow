@@ -65,6 +65,10 @@ export async function GET(
                 isShared: albums.isShared,
                 photographerId: albums.photographerId,
                 title: albums.title,
+                watermarkText: albums.watermarkText,
+                watermarkQuality: albums.watermarkQuality,
+                watermarkFont: albums.watermarkFont,
+                watermarkOpacity: albums.watermarkOpacity,
             })
             .from(albums)
             .where(eq(albums.id, albumId))
@@ -157,6 +161,7 @@ export async function POST(
                 watermarkText: albums.watermarkText,
                 watermarkQuality: albums.watermarkQuality,
                 watermarkFont: albums.watermarkFont,
+                watermarkOpacity: albums.watermarkOpacity,
             })
             .from(albums)
             .where(eq(albums.id, albumId))
