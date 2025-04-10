@@ -81,11 +81,12 @@ export async function GET(
 }
 
 interface PatchAlbumRequestBody {
-    title?: string
-    description?: string
-    watermarkText?: string
-    watermarkQuality?: "512p" | "1080p" | "2K" | "4K"
-    watermarkOpacity?: number
+    title?: string;
+    description?: string;
+    watermarkText?: string;
+    watermarkQuality?: "512p" | "1080p" | "2K" | "4K";
+    watermarkOpacity?: number;
+    coverImage?: string;
 }
 
 export async function PATCH(
@@ -156,6 +157,7 @@ export async function PATCH(
                 ...(body.watermarkText !== undefined && { watermarkText: body.watermarkText }),
                 ...(body.watermarkQuality !== undefined && { watermarkQuality: body.watermarkQuality }),
                 ...(body.watermarkOpacity !== undefined && { watermarkOpacity: body.watermarkOpacity }),
+                ...(body.coverImage && { coverImage: body.coverImage }),
                 updatedAt: new Date(),
             })
             .where(eq(albums.id, albumId))
@@ -163,9 +165,14 @@ export async function PATCH(
                 id: albums.id,
                 title: albums.title,
                 description: albums.description,
+                coverImage: albums.coverImage,
                 watermarkText: albums.watermarkText,
                 watermarkQuality: albums.watermarkQuality,
                 watermarkOpacity: albums.watermarkOpacity,
+                createdAt: albums.createdAt,
+                updatedAt: albums.updatedAt,
+                isShared: albums.isShared,
+                photographerId: albums.photographerId,
             });
 
         if (!updatedAlbum.length) {

@@ -150,6 +150,7 @@ export async function updateAlbumSettings(
         watermarkText: string
         watermarkQuality: "512p" | "1080p" | "2K" | "4K"
         watermarkOpacity: number
+        coverImage?: string
     }
 ): Promise<Album> {
     const response = await fetch(`${API_BASE_URL}/albums/${albumId}`, {

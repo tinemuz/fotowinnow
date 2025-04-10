@@ -79,7 +79,7 @@ export default function Dashboard() {
             <p className="text-muted-foreground">No albums yet. Create your first album!</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-2">
             {albums.map((album) => (
               <AlbumCard key={album.id} album={album} />
             ))}

@@ -79,15 +79,99 @@ export default function AlbumDetail() {
     watermarkText: string
     watermarkQuality: "512p" | "1080p" | "2K" | "4K"
     watermarkOpacity: number
-  }) => {
+    coverImage?: File
+  }, onProgress?: (status: string, progress?: number) => void) => {
     try {
-      const updatedAlbum = await updateAlbumSettings(albumId, settings)
-      setAlbum(updatedAlbum)
+      let coverImageUrl = album?.coverImage;
+
+      // If a new cover image is provided, process and upload it
+      if (settings.coverImage) {
+        onProgress?.("Getting upload URL...");
+        
+        // First get pre-signed URL for the original upload
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            filename: `cover_image_${settings.coverImage.name}`,
+            contentType: settings.coverImage.type,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to get upload URL for cover image');
+        }
+
+        const { signedUrl, url } = await response.json();
+
+        // Upload the original file with progress tracking
+        onProgress?.("Uploading cover image...", 0);
+        
+        const xhr = new XMLHttpRequest();
+        await new Promise<void>((resolve, reject) => {
+          xhr.upload.addEventListener('progress', (event) => {
+            if (event.lengthComputable) {
+              const percentComplete = (event.loaded / event.total) * 100;
+              onProgress?.("Uploading cover image...", percentComplete);
+            }
+          });
+
+          xhr.addEventListener('load', () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve();
+            } else {
+              reject(new Error('Upload failed'));
+            }
+          });
+
+          xhr.addEventListener('error', () => reject(new Error('Upload failed')));
+
+          xhr.open('PUT', signedUrl);
+          xhr.setRequestHeader('Content-Type', settings.coverImage!.type);
+          xhr.send(settings.coverImage);
+        });
+
+        // Process the image to create an optimized WebP version
+        onProgress?.("Processing image...");
+        const imageKey = url.replace('/api/images/', '');
+        const processResponse = await fetch('/api/images/process', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            key: imageKey,
+            watermark: '', // No watermark for cover images
+            quality: '1080p', // Standard quality for cover images
+            fontName: 'Space Mono',
+            watermarkOpacity: 0
+          }),
+        });
+
+        if (!processResponse.ok) {
+          throw new Error('Failed to process cover image');
+        }
+
+        const { optimizedUrl } = await processResponse.json();
+        coverImageUrl = optimizedUrl;
+      }
+
+      onProgress?.("Saving album settings...");
+      // Update album settings with the optimized cover image URL
+      const updatedAlbum = await updateAlbumSettings(albumId, {
+        ...settings,
+        coverImage: coverImageUrl,
+      });
+      
+      setAlbum(updatedAlbum);
+      onProgress?.("Saved successfully!");
     } catch (err) {
-      console.error("Failed to save settings:", err)
-      throw err
+      console.error("Failed to save settings:", err);
+      throw err;
     }
-  }
+  };
 
   if (isLoading) {
     return (
