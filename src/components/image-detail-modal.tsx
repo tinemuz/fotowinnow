@@ -1,12 +1,11 @@
 "use client"
 
-import { Dialog, DialogContent } from "~/components/ui/dialog"
 import { Button } from "~/components/ui/button"
 import { Textarea } from "~/components/ui/textarea"
 import { type Image as ImageType, type Comment } from "~/lib/types"
 import NextImage from "next/image"
-import { ChevronLeft, ChevronRight, MessageSquare, Trash2} from "lucide-react"
-import { useState, useEffect, useCallback } from "react"
+import { ChevronLeft, ChevronRight, MessageSquare, Trash2, X } from "lucide-react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { ScrollArea } from "~/components/ui/scroll-area"
 import { fetchImageComments, createComment } from "~/lib/api"
 
@@ -29,12 +28,24 @@ export function ImageDetailModal({
   isClientView = false,
   onNavigate,
 }: ImageDetailModalProps) {
+  const dialogRef = useRef<HTMLDialogElement>(null)
   const [newComment, setNewComment] = useState("")
   const [comments, setComments] = useState<Comment[]>([])
   const [markedForDeletion, setMarkedForDeletion] = useState(false)
   const [isAddingComment, setIsAddingComment] = useState(false)
   const [isLoadingComments, setIsLoadingComments] = useState(false)
   const [isSubmittingComment, setIsSubmittingComment] = useState(false)
+
+  useEffect(() => {
+    const dialog = dialogRef.current
+    if (!dialog) return
+
+    if (isOpen) {
+      dialog.showModal()
+    } else {
+      dialog.close()
+    }
+  }, [isOpen])
 
   useEffect(() => {
     const loadComments = async () => {
@@ -58,7 +69,7 @@ export function ImageDetailModal({
     setMarkedForDeletion(false)
     setNewComment("") // Reset new comment input when image changes
     setIsAddingComment(false) // Close comment input when image changes
-  }, [image]) // Add image to dependency array
+  }, [image])
 
   const handleAddComment = async () => {
     if (!newComment.trim() || !image) return
@@ -122,11 +133,24 @@ export function ImageDetailModal({
   if (!image) return null
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <div className="flex flex-col h-full">
-          {/* Image Section - Fixed height */}
-          <div className="relative w-full h-[50vh] min-h-[400px] flex-shrink-0 flex items-center justify-center">
+    <dialog
+      ref={dialogRef}
+      className="w-screen h-screen p-0 m-0 bg-transparent backdrop:bg-black/80"
+      onClose={onClose}
+    >
+      <div className="w-full h-full">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute right-4 top-4 z-50 bg-black/20 hover:bg-black/40 text-white rounded-full"
+          onClick={onClose}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+
+        <div className="flex h-full">
+          {/* Image Section */}
+          <div className="relative flex-1 h-full flex items-center justify-center bg-white">
             <Button
               variant="ghost"
               size="icon"
@@ -150,7 +174,7 @@ export function ImageDetailModal({
                 src={watermarked ? (image.watermarkedUrl ?? "/placeholder.svg") : (image.optimizedUrl ?? "/placeholder.svg")}
                 alt={image.caption ?? "Image"}
                 fill
-                className="object-contain"
+                className="object-contain p-18"
               />
               {watermarked && !image.watermarkedUrl && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -167,8 +191,8 @@ export function ImageDetailModal({
             </div>
           </div>
 
-          {/* Comments Section */}
-          <div className="flex flex-col h-[40vh] min-h-[300px] border-t">
+          {/* Comments Section - Fixed width sidebar */}
+          <div className="w-[400px] flex flex-col h-full bg-white">
             <div className="p-4 border-b">
               <div className="flex justify-between items-center mb-2">
                 <h3 className="text-base font-medium">Comments</h3>
@@ -247,8 +271,8 @@ export function ImageDetailModal({
             </div>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </dialog>
   )
 }
 
