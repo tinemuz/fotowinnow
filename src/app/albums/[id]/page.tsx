@@ -9,10 +9,11 @@ import { ShareModal } from "~/components/share-modal"
 import { ImageDetailModal } from "~/components/image-detail-modal"
 import { type Album, type Image as ImageType } from "~/lib/types"
 import { fetchAlbumById, fetchAlbumImages, createImage, updateAlbumSettings } from "~/lib/api"
-import { Upload, Share2, Settings } from "lucide-react"
+import { Upload, Share2, Settings, ChevronRight } from "lucide-react";
 import { UploadPhotosModal } from "~/components/upload-photos-modal"
 import { NavBar } from "~/components/nav-bar"
 import { AlbumSettingsModal } from "~/components/album-settings-modal"
+import Link from "next/link";
 
 export default function AlbumDetail() {
   const params = useParams()
@@ -117,10 +118,20 @@ export default function AlbumDetail() {
 
   return (
     <>
-      <NavBar albumTitle={album.title} />
+      <NavBar />
       <div className="container py-8 px-2">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">{album.title}</h1>
+          <div className="text-2xl font-bold mb-2 flex items-center text-muted-foreground">
+            <Link href="/" className="text-foreground/40 hover:text-foreground/50 pr-1">
+              Albums
+            </Link>
+            {album.title && (
+              <>
+                <ChevronRight className="size-8" />
+                <span className="text-foreground">{album.title}</span>
+              </>
+            )}
+          </div>
           <p className="text-muted-foreground">{album.description}</p>
         </div>
 
