@@ -4,6 +4,16 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
+import fs from 'fs';
+import path from 'path';
+
+// Function to get a random cover image from public/cover directory
+function getRandomCoverImage(): string {
+    const coverDir = path.join(process.cwd(), 'public', 'cover');
+    const coverFiles = fs.readdirSync(coverDir).filter(file => file.endsWith('.webp'));
+    const randomFile = coverFiles[Math.floor(Math.random() * coverFiles.length)];
+    return `/cover/${randomFile}`;
+}
 
 export async function GET(_request: NextRequest) {
     try {
@@ -96,7 +106,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const coverImage = "/placeholder.svg?height=400&width=600";
+        const coverImage = getRandomCoverImage();
 
         const newAlbumData = {
             title: name,
@@ -109,9 +119,18 @@ export async function POST(request: NextRequest) {
             // Watermark fields will be added by the migration with defaults
         } as const;
 
-        const insertedAlbums: { id: number }[] = await db.insert(albums)
+        const insertedAlbums = await db.insert(albums)
             .values(newAlbumData)
-            .returning({ id: albums.id });
+            .returning({
+                id: albums.id,
+                title: albums.title,
+                description: albums.description,
+                coverImage: albums.coverImage,
+                createdAt: albums.createdAt,
+                updatedAt: albums.updatedAt,
+                isShared: albums.isShared,
+                photographerId: albums.photographerId,
+            });
 
         if (!insertedAlbums || insertedAlbums.length === 0) {
             return NextResponse.json(
@@ -120,9 +139,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const newAlbumId = insertedAlbums[0]?.id;
-
-        return NextResponse.json({ id: newAlbumId }, { status: 201 });
+        return NextResponse.json(insertedAlbums[0], { status: 201 });
     } catch (error) {
         console.error("Error creating album:", error);
         return NextResponse.json(

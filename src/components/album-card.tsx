@@ -21,19 +21,14 @@ export function AlbumCard({ album }: AlbumCardProps) {
       onClick={handleViewAlbum}
     >
       <div className="bg-muted relative aspect-4/3 w-full">
-        {album.coverImage ? (
+
           <img
             src={album.coverImage}
             alt={album.title}
             className="absolute inset-0 h-full w-full object-cover"
           />
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <p className="text-muted-foreground">No cover image</p>
-          </div>
-        )}
-      </div>
 
+      </div>
 
       <div className="pt-2 font-semibold">{album.title}</div>
       <div className="text-sm text-stone-500">
