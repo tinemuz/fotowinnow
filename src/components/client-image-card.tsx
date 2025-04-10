@@ -1,11 +1,9 @@
 "use client"
 
-import { Card, CardContent, CardFooter } from "~/components/ui/card"
-import { type Image as ImageType } from "~/lib/types"
-import NextImage from "next/image"
-import { Button } from "~/components/ui/button"
-import { MessageSquare, Trash2 } from "lucide-react"
+import type { Image as ImageType } from "~/lib/types"
 import { useState } from "react"
+import Image from "next/image"
+import { MessageSquare } from "lucide-react"
 import { Badge } from "~/components/ui/badge"
 
 interface ClientImageCardProps {
@@ -14,18 +12,24 @@ interface ClientImageCardProps {
 }
 
 export function ClientImageCard({ image, onImageClick }: ClientImageCardProps) {
-  const [markedForDeletion, setMarkedForDeletion] = useState(false)
+  const [markedForDeletion] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
   // For now, we'll use a placeholder comment count since we haven't implemented comments yet
   const commentCount = 0
 
   return (
-    <Card className={`overflow-hidden py-0 ${markedForDeletion ? "opacity-60" : ""}`}>
-      <div className="relative aspect-square cursor-pointer" onClick={() => onImageClick(image)}>
-        <NextImage
+    <div className={`overflow-hidden py-0 ${markedForDeletion ? "opacity-60" : ""}`}>
+      <div
+        className={`relative aspect-square cursor-pointer ${isHovered ? "opacity-80" : ""}`}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onClick={() => onImageClick(image)}
+      >
+        <Image
           src={image.watermarkedUrl ?? "/placeholder.svg"}
           alt={image.caption ?? "Album photo"}
           fill
-          className="object-cover"
+          className="object-contain p-3 bg-stone-100"
         />
         {!image.watermarkedUrl && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -46,25 +50,13 @@ export function ClientImageCard({ image, onImageClick }: ClientImageCardProps) {
           </div>
         )}
       </div>
-      <CardContent className="p-3 py-0">
-        <p className="text-xs truncate">{image.caption ?? "Untitled"}</p>
-      </CardContent>
-      <CardFooter className="flex justify-between p-2 pt-0">
-        <Button variant="ghost" size="sm" className="text-xs h-7 px-2" onClick={() => onImageClick(image)}>
-          <MessageSquare className="h-3 w-3 mr-1" />
-          Comment
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className={`text-xs h-7 px-2 ${markedForDeletion ? "text-red-500" : ""}`}
-          onClick={() => setMarkedForDeletion(!markedForDeletion)}
-        >
-          <Trash2 className="h-3 w-3 mr-1" />
-          {markedForDeletion ? "Undo" : "Delete"}
-        </Button>
-      </CardFooter>
-    </Card>
+
+      <div className="pt-1 grid grid-cols-5">
+        <div className="col-span-3 col-start-2">
+          <p className="text-xs truncate text-center">{image.caption ?? "Untitled"}</p>
+        </div>
+      </div>
+    </div>
   )
 }
 

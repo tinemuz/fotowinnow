@@ -172,9 +172,6 @@ export async function POST(req: NextRequest) {
             originalHeight
         });
 
-        const originalAspectRatio = originalWidth / originalHeight;
-        const targetAspectRatio = targetDimensions.width / targetDimensions.height;
-
         // Calculate new dimensions based on aspect ratio
         const aspectRatio = originalWidth / originalHeight;
         const [newWidth, newHeight] = originalWidth > originalHeight

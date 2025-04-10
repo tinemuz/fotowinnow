@@ -9,7 +9,6 @@ import { ImagePlus, X } from "lucide-react"
 import { useState, useRef } from "react"
 import NextImage from "next/image"
 import { toast } from "sonner"
-import { Progress } from "~/components/ui/progress"
 import { UploadProgressToast } from "~/components/upload-progress-toast"
 
 interface UploadPhotosModalProps {

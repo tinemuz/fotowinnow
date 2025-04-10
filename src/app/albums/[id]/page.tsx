@@ -15,6 +15,15 @@ import { NavBar } from "~/components/nav-bar"
 import { AlbumSettingsModal } from "~/components/album-settings-modal"
 import Link from "next/link";
 
+interface UploadUrlResponse {
+  signedUrl: string
+  url: string
+}
+
+interface ProcessImageResponse {
+  optimizedUrl: string
+}
+
 export default function AlbumDetail() {
   const params = useParams()
   const albumId = Number(params.id)
@@ -81,22 +90,20 @@ export default function AlbumDetail() {
     watermarkOpacity: number
     coverImage?: File
   }, onProgress?: (status: string, progress?: number) => void) => {
-    try {
-      let coverImageUrl = album?.coverImage;
+    let coverImageUrl = settings.coverImage ? null : album?.coverImage;
 
-      // If a new cover image is provided, process and upload it
+    try {
       if (settings.coverImage) {
-        onProgress?.("Getting upload URL...");
-        
-        // First get pre-signed URL for the original upload
+        const coverImageFile = settings.coverImage;
+        // Get signed URL for upload
         const response = await fetch('/api/upload', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            filename: `cover_image_${settings.coverImage.name}`,
-            contentType: settings.coverImage.type,
+            contentType: coverImageFile.type,
+            filename: coverImageFile.name,
           }),
         });
 
@@ -104,7 +111,7 @@ export default function AlbumDetail() {
           throw new Error('Failed to get upload URL for cover image');
         }
 
-        const { signedUrl, url } = await response.json();
+        const { signedUrl, url } = await response.json() as UploadUrlResponse;
 
         // Upload the original file with progress tracking
         onProgress?.("Uploading cover image...", 0);
@@ -129,8 +136,8 @@ export default function AlbumDetail() {
           xhr.addEventListener('error', () => reject(new Error('Upload failed')));
 
           xhr.open('PUT', signedUrl);
-          xhr.setRequestHeader('Content-Type', settings.coverImage!.type);
-          xhr.send(settings.coverImage);
+          xhr.setRequestHeader('Content-Type', coverImageFile.type);
+          xhr.send(coverImageFile);
         });
 
         // Process the image to create an optimized WebP version
@@ -154,7 +161,7 @@ export default function AlbumDetail() {
           throw new Error('Failed to process cover image');
         }
 
-        const { optimizedUrl } = await processResponse.json();
+        const { optimizedUrl } = await processResponse.json() as ProcessImageResponse;
         coverImageUrl = optimizedUrl;
       }
 
@@ -162,7 +169,7 @@ export default function AlbumDetail() {
       // Update album settings with the optimized cover image URL
       const updatedAlbum = await updateAlbumSettings(albumId, {
         ...settings,
-        coverImage: coverImageUrl,
+        coverImage: coverImageUrl ?? album?.coverImage,
       });
       
       setAlbum(updatedAlbum);
@@ -246,6 +253,9 @@ export default function AlbumDetail() {
               images={images}
               watermarked={false}
               onImageClick={handleImageClick}
+              albumId={albumId}
+              onAlbumUpdate={setAlbum}
+              album={album}
             />
           </TabsContent>
           <TabsContent value="watermarked">
@@ -253,6 +263,9 @@ export default function AlbumDetail() {
               images={images}
               watermarked={true}
               onImageClick={handleImageClick}
+              albumId={albumId}
+              onAlbumUpdate={setAlbum}
+              album={album}
             />
           </TabsContent>
         </Tabs>

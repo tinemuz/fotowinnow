@@ -7,13 +7,14 @@ import { NewAlbumModal } from "~/components/new-album-modal"
 import { fetchAlbums } from "~/lib/api"
 import type { Album } from "~/lib/types"
 import { NavBar } from "~/components/nav-bar"
+import { useRouter } from "next/navigation"
 
 export default function Dashboard() {
   const [isNewAlbumModalOpen, setIsNewAlbumModalOpen] = useState(false)
   const [albums, setAlbums] = useState<Album[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  // const router = useRouter()
+  const router = useRouter()
 
   const loadAlbums = async () => {
     try {
@@ -34,6 +35,10 @@ export default function Dashboard() {
 
   const handleAlbumCreated = () => {
     void loadAlbums()
+  }
+
+  const handleAlbumClick = (albumId: number) => {
+    router.push(`/albums/${albumId}`)
   }
 
   if (isLoading) {
@@ -81,7 +86,15 @@ export default function Dashboard() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-2">
             {albums.map((album) => (
-              <AlbumCard key={album.id} album={album} />
+              <AlbumCard
+                key={album.id}
+                id={album.id}
+                title={album.title}
+                description={album.description}
+                coverImage={album.coverImage}
+                isShared={album.isShared}
+                onClick={() => handleAlbumClick(album.id)}
+              />
             ))}
           </div>
         )}

@@ -47,7 +47,7 @@ export function AlbumSettingsModal({ isOpen, onClose, album, onSave }: AlbumSett
     if (!e.target.files || e.target.files.length === 0) return;
     
     const file = e.target.files[0];
-    if (!file.type.startsWith('image/')) {
+    if (!file?.type.startsWith('image/')) {
       setError("Please select an image file");
       return;
     }
@@ -105,10 +105,10 @@ export function AlbumSettingsModal({ isOpen, onClose, album, onSave }: AlbumSett
               className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-muted/50 transition-colors relative"
               onClick={() => fileInputRef.current?.click()}
             >
-              {coverImagePreview || album.coverImage ? (
+              {coverImagePreview ?? album.coverImage ? (
                 <div className="relative aspect-4/3 w-full">
                   <Image
-                    src={coverImagePreview || album.coverImage}
+                    src={coverImagePreview ?? album.coverImage}
                     alt="Album cover"
                     fill
                     className="object-cover rounded-md"
@@ -232,7 +232,7 @@ export function AlbumSettingsModal({ isOpen, onClose, album, onSave }: AlbumSett
               type="submit"
               disabled={!title.trim() || isSubmitting}
             >
-              {isSubmitting ? (uploadStatus || "Saving...") : "Save Changes"}
+              {isSubmitting ? (uploadStatus ?? "Saving...") : "Save Changes"}
             </Button>
           </DialogFooter>
         </form>

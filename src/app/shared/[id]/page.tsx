@@ -58,12 +58,10 @@ export default function SharedAlbumView() {
       <div className="text-center space-y-2 max-w-2xl mx-auto">
         <h1 className="text-xl font-bold">{album.title}</h1>
         <p className="text-sm text-muted-foreground">{album.description}</p>
-        <div className="text-xs text-muted-foreground border-t border-b py-2 my-2">
-          Shared by {album.photographerName}
-        </div>
+        <span className="text-sm text-foreground/50">Add your comments suggestions or thoughts on your photos.</span>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         {images.map((image) => (
           <ClientImageCard key={image.id} image={image} onImageClick={handleImageClick} />
         ))}
