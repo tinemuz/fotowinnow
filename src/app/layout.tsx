@@ -3,6 +3,7 @@ import "~/styles/globals.css";
 import { type Metadata } from "next";
 import { Geist } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -21,7 +22,10 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en" className={`${geist.variable}`}>
-      <body className={" flex w-full flex-col items-center px-4"}>{children}</body>
+        <body className={"flex w-full flex-col items-center px-4"}>
+          {children}
+          <SpeedInsights />
+        </body>
       </html>
     </ClerkProvider>
   );
