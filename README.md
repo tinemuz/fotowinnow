@@ -1,4 +1,4 @@
-# Fotowinnow-ag
+# Fotowinnow
 
 A modern photo proofing and delivery application designed for photographers, built with Next.js.
 
