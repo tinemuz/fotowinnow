@@ -14,6 +14,7 @@ interface ClientImageCardProps {
 export function ClientImageCard({ image, onImageClick }: ClientImageCardProps) {
   const [markedForDeletion] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
+  const [isLoaded, setIsLoaded] = useState(false)
   // For now, we'll use a placeholder comment count since we haven't implemented comments yet
   const commentCount = 0
 
@@ -29,7 +30,8 @@ export function ClientImageCard({ image, onImageClick }: ClientImageCardProps) {
           src={image.watermarkedUrl ?? "/placeholder.svg"}
           alt={image.caption ?? "Album photo"}
           fill
-          className="object-contain p-3 bg-stone-100"
+          className={`object-contain p-3 bg-stone-100 transition-opacity duration-100 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+          onLoadingComplete={() => setIsLoaded(true)}
         />
         {!image.watermarkedUrl && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

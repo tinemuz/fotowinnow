@@ -21,6 +21,7 @@ interface ImageGridProps {
 
 export function ImageGrid({ images, watermarked, clientView = false, onImageClick, albumId, onAlbumUpdate, album }: ImageGridProps) {
   const [openMenuId, setOpenMenuId] = useState<number | null>(null)
+  const [loadedImages, setLoadedImages] = useState<Record<number, boolean>>({})
 
   const handleSetAsCover = async (image: ImageType) => {
     try {
@@ -64,6 +65,10 @@ export function ImageGrid({ images, watermarked, clientView = false, onImageClic
     }
   };
 
+  const handleImageLoad = (imageId: number) => {
+    setLoadedImages(prev => ({ ...prev, [imageId]: true }))
+  }
+
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
       {images.map((image) => (
@@ -73,7 +78,8 @@ export function ImageGrid({ images, watermarked, clientView = false, onImageClic
               src={watermarked ? (image.watermarkedUrl ?? "/placeholder.svg") : (image.optimizedUrl ?? "/placeholder.svg")}
               alt={image.caption ?? "Album photo"}
               fill
-              className="object-contain p-3 bg-stone-100"
+              className={`object-contain p-3 bg-stone-100 transition-opacity duration-100 ${loadedImages[image.id] ? 'opacity-100' : 'opacity-0'}`}
+              onLoadingComplete={() => handleImageLoad(image.id)}
             />
 
             {!clientView && (
