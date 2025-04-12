@@ -27,16 +27,25 @@ export default function LandingPage() {
             Streamline your photography workflow with our intuitive platform. Share, proof, and deliver photos to your clients with ease.
           </p>
           <div className="flex gap-4">
-            <SignUpButton>
-              <button className="bg-stone-900 text-white px-6 py-3 rounded-full font-medium hover:bg-stone-800 transition-colors">
-                Get Started
-              </button>
-            </SignUpButton>
-            <SignInButton>
-              <button className="bg-stone-100 text-stone-900 px-6 py-3 rounded-full font-medium hover:bg-stone-200 transition-colors">
-                Sign In
-              </button>
-            </SignInButton>
+            {!isLoaded ? (
+              <>
+                <div className="w-32 h-12 bg-stone-100 rounded-full animate-pulse"></div>
+                <div className="w-32 h-12 bg-stone-100 rounded-full animate-pulse"></div>
+              </>
+            ) : (
+              <>
+                <SignUpButton>
+                  <button className="bg-stone-900 text-white px-6 py-3 rounded-full font-medium hover:bg-stone-800 transition-colors">
+                    Get Started
+                  </button>
+                </SignUpButton>
+                <SignInButton>
+                  <button className="bg-stone-100 text-stone-900 px-6 py-3 rounded-full font-medium hover:bg-stone-200 transition-colors">
+                    Sign In
+                  </button>
+                </SignInButton>
+              </>
+            )}
           </div>
         </div>
       </div>

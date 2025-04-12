@@ -184,7 +184,30 @@ export default function AlbumDetail() {
     return (
       <>
         <NavBar />
-        <div className="container py-8">Loading...</div>
+        <div className="container py-8 px-2">
+          <div className="mb-8">
+            <div className="animate-pulse">
+              <div className="h-8 bg-stone-100 rounded w-1/3 mb-2"></div>
+              <div className="h-4 bg-stone-100 rounded w-1/2"></div>
+            </div>
+          </div>
+          
+          <div className="flex justify-end mb-8">
+            <div className="flex gap-2">
+              <div className="w-24 h-10 bg-stone-100 rounded animate-pulse"></div>
+              <div className="w-24 h-10 bg-stone-100 rounded animate-pulse"></div>
+              <div className="w-32 h-10 bg-stone-100 rounded animate-pulse"></div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {[...Array(15)].map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="aspect-square bg-stone-100 rounded"></div>
+              </div>
+            ))}
+          </div>
+        </div>
       </>
     )
   }

@@ -38,7 +38,24 @@ export default function SharedAlbumView() {
   }, [albumId])
 
   if (isLoading) {
-    return <div className="container py-8">Loading...</div>
+    return (
+      <div className="container py-8">
+        <div className="mb-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-stone-100 rounded w-1/3 mb-2"></div>
+            <div className="h-4 bg-stone-100 rounded w-1/2"></div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          {[...Array(15)].map((_, i) => (
+            <div key={i} className="animate-pulse">
+              <div className="aspect-square bg-stone-100 rounded"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   if (error) {

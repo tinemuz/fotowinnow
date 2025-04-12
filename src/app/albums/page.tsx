@@ -46,8 +46,14 @@ export default function AlbumsPage() {
       <>
         <NavBar />
         <div className="container py-8">
-          <div className="flex items-center justify-center">
-            <p>Loading albums...</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="aspect-video bg-stone-100 rounded-lg mb-2"></div>
+                <div className="h-4 bg-stone-100 rounded w-3/4 mb-2"></div>
+                <div className="h-3 bg-stone-100 rounded w-1/2"></div>
+              </div>
+            ))}
           </div>
         </div>
       </>
