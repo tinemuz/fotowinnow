@@ -1,8 +1,5 @@
 "use client";
 
-import type { Album } from "~/lib/types";
-import { useRouter } from "next/navigation";
-
 interface AlbumCardProps {
   id: number;
   title: string;
@@ -14,7 +11,7 @@ interface AlbumCardProps {
   onClick: () => void;
 }
 
-export function AlbumCard({ title, description, coverImage, onClick, updatedAt, createdAt }: AlbumCardProps) {
+export function AlbumCard({ title, coverImage, onClick, updatedAt, createdAt }: AlbumCardProps) {
   return (
     <div
       className="overflow-hidden p-2 duration-100 ease-in-out cursor-pointer hover:bg-stone-100"

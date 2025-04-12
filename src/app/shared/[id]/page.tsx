@@ -48,7 +48,7 @@ export default function SharedAlbumView() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-          {[...Array(15)].map((_, i) => (
+          {Array.from({ length: 15 }).map((_, i) => (
             <div key={i} className="animate-pulse">
               <div className="aspect-square bg-stone-100 rounded"></div>
             </div>
