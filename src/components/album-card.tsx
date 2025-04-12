@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from 'react';
+
 interface AlbumCardProps {
   id: number;
   title: string;
@@ -12,6 +14,8 @@ interface AlbumCardProps {
 }
 
 export function AlbumCard({ title, coverImage, onClick, updatedAt, createdAt }: AlbumCardProps) {
+  const [isLoaded, setIsLoaded] = useState(false);
+
   return (
     <div
       className="overflow-hidden p-2 duration-100 ease-in-out cursor-pointer hover:bg-stone-100"
@@ -21,7 +25,8 @@ export function AlbumCard({ title, coverImage, onClick, updatedAt, createdAt }: 
           <img
             src={coverImage}
             alt={title}
-            className="absolute inset-0 h-full w-full object-cover"
+            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+            onLoad={() => setIsLoaded(true)}
           />
       </div>
 
